@@ -1,21 +1,23 @@
-﻿<Window x:Class="QUIKSharpTEST2.MainWindow"
+﻿<Window x:Name="MainWind" x:Class="QUIKSharpTEST2.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:QUIKSharpTEST2"
         mc:Ignorable="d"
-        Title="TestQuik# v2" Height="255" Width="760">
+        Title="TestQuik# v2" Height="255" Width="680" Loaded="MainWind_Loaded">
     <Grid>
-        <DataGrid x:Name="DataGrdTools">
+        <DataGrid x:Name="DataGrdTools" FontSize="16" FontWeight="Bold" Margin="10" AutoGenerateColumns="False">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="№" Width="25"/>
-                <DataGridCheckBoxColumn Header="IsActiv" Width="100"/>
-                <DataGridTextColumn Header="Tool" Width="100"/>
-                <DataGridComboBoxColumn Header="Buy/Sel" Width="100" />
-                <DataGridTextColumn Header="Praice" Width="100"/>
-                <DataGridTextColumn Header="Step" Width="100"/>
-            </DataGrid.Columns> 
-        </DataGrid>
+                <DataGridTextColumn Header="№" Width="30" IsReadOnly="True"/>
+                <DataGridTextColumn Binding="{Binding Path = SecurityCode}" Header="Tool" Width="60" IsReadOnly="True"/>
+                <DataGridCheckBoxColumn Binding="{Binding Path = Isactiv, UpdateSourceTrigger=PropertyChanged}" Header="IsActiv" Width="60" IsReadOnly="False"/>
+                <DataGridComboBoxColumn  Header="Buy/Sel" Width="70" IsReadOnly="False"/>
+                <DataGridTextColumn Binding="{Binding Path = LastPrice}" Header="LastPrice" Width="100" IsReadOnly="True"/>
+                <DataGridTextColumn Binding="{Binding Path = Positions}" Header="Position" Width="70" IsReadOnly="True"/>
+                <DataGridTextColumn Binding="{Binding Path = PriceAccuracy}" Header="PriceAccur" Width="100" IsReadOnly="True"/>
+                <DataGridTextColumn Binding="{Binding Path = Step}" Header="Step" Width="*" IsReadOnly="True"/>
+            </DataGrid.Columns>
+        </DataGrid>  
     </Grid>
 </Window>

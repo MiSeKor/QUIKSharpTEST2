@@ -1,0 +1,21 @@
+﻿<Window x:Class="QUIKSharpTEST2.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:QUIKSharpTEST2"
+        mc:Ignorable="d"
+        Title="TestQuik# v2" Height="255" Width="760">
+    <Grid>
+        <DataGrid x:Name="DataGrdTools">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="№" Width="25"/>
+                <DataGridCheckBoxColumn Header="IsActiv" Width="100"/>
+                <DataGridTextColumn Header="Tool" Width="100"/>
+                <DataGridComboBoxColumn Header="Buy/Sel" Width="100" />
+                <DataGridTextColumn Header="Praice" Width="100"/>
+                <DataGridTextColumn Header="Step" Width="100"/>
+            </DataGrid.Columns> 
+        </DataGrid>
+    </Grid>
+</Window>

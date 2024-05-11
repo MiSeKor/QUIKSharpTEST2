@@ -29,7 +29,7 @@ namespace QUIKSharpTEST2
 
         private readonly string Path = $"{Environment.CurrentDirectory}\\ListTools.json";
         private СlassSaveLoad СlassSaveLoadFiles;
-        private BindingList<Tool> toolList;
+        public BindingList<Tool> toolList;
         public Quik _quik; 
         private Tool Sber, Vtbr, Rosn; 
         private Tool _tool;
@@ -44,7 +44,7 @@ namespace QUIKSharpTEST2
             СlassSaveLoadFiles = new СlassSaveLoad(Path);
 
             try
-            {
+            { 
                 toolList = СlassSaveLoadFiles.LoadData();
                 // foreach (var i in toolList)
                 // {
@@ -57,14 +57,14 @@ namespace QUIKSharpTEST2
                 MessageBox.Show(ex.Message);
                 Close();
             }  
-            //
-            // toolList = new BindingList<Tool>()
-            // {
-            //     new Tool(_quik,"SBER"),
-            //     new Tool(_quik,"VTBR"),
-            //     new Tool(_quik,"ROSN"),
-            //     new Tool(_quik,"RUAL"),
-            // };
+            
+            toolList = new BindingList<Tool>()
+            {
+                new Tool(_quik,"SBER"),
+                new Tool(_quik,"VTBR"),
+                new Tool(_quik,"ROSN"),
+                new Tool(_quik,"RUAL"),
+            };
 
             DataGrdTools.ItemsSource = toolList;
 
@@ -89,6 +89,10 @@ namespace QUIKSharpTEST2
             }
         }
 
+        void Demonsracia(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("Абра-Кадабра");
+        }
         private Quik СreateQuik()
         {
             try

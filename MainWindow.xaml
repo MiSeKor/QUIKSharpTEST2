@@ -14,9 +14,23 @@
                 <DataGridCheckBoxColumn Binding="{Binding Path = Isactiv, UpdateSourceTrigger=PropertyChanged}" Header="IsActiv" Width="60" IsReadOnly="False"/>
                 <DataGridComboBoxColumn  Header="Buy/Sel" Width="70" IsReadOnly="False"/>
                 <DataGridTextColumn Binding="{Binding Path = LastPrice}" Header="LastPrice" Width="100" IsReadOnly="True"/>
-                <DataGridTextColumn Binding="{Binding Path = Positions}" Header="Position" Width="70" IsReadOnly="True"/>
-                <DataGridTextColumn Binding="{Binding Path = PriceAccuracy}" Header="PriceAccur" Width="100" IsReadOnly="True"/>
-                <DataGridTextColumn Binding="{Binding Path = Step}" Header="Step" Width="*" IsReadOnly="True"/>
+                <DataGridTextColumn Binding="{Binding Path = Positions}" Header="Position" Width="50" IsReadOnly="True"/>
+                <DataGridTextColumn Binding="{Binding Path = PriceAccuracy}" Header="PriceAccur" Width="50" IsReadOnly="True"/>
+                <DataGridTextColumn Binding="{Binding Path = Step}" Header="Step" Width="50" IsReadOnly="True"/>
+                <DataGridTemplateColumn Header="BtnBuy" Width="65">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Button Click="Demonsracia" Content="Buy"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="BtnSel" Width="65">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Button Click="Demonsracia" Content="Sel"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
             </DataGrid.Columns>
         </DataGrid>  
     </Grid>

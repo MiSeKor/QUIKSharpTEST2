@@ -15,6 +15,8 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using QUIKSharpTEST2.Servises;
+using System.IO;
+using Newtonsoft.Json;
 
 namespace QUIKSharpTEST2
 {
@@ -30,6 +32,7 @@ namespace QUIKSharpTEST2
         private readonly string Path = $"{Environment.CurrentDirectory}\\ListTools.json";
         private СlassSaveLoad СlassSaveLoadFiles;
         public BindingList<Tool> toolList;
+        //List<Tool> toolList;
         public Quik _quik; 
         private Tool Sber, Vtbr, Rosn; 
         private Tool _tool;
@@ -44,36 +47,63 @@ namespace QUIKSharpTEST2
             СlassSaveLoadFiles = new СlassSaveLoad(Path);
 
             try
-            { 
-                toolList = СlassSaveLoadFiles.LoadData();
+            {
+                toolList = new BindingList<Tool>();
+                var Lst = new List<string>();
+
+                using (var reader = File.OpenText(Path))
+                {
+                    var Files = reader.ReadToEnd();
+                    //var Files = reader.ReadLine();
+                    Lst = JsonConvert.DeserializeObject<List<string>>(Files);
+                }
+
+                foreach (var i in Lst)
+                {
+                    toolList.Add(new Tool(_quik, i));
+                }
+
+                //toolList = new List<Tool>();
+                // toolList = new BindingList<Tool>();
+                // toolList = СlassSaveLoadFiles.LoadData();
                 // foreach (var i in toolList)
                 // {
                 //     new Tool(_quik, i.SecurityCode);
                 // }
-                
+
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message);
-                Close();
-            }  
-            
-            toolList = new BindingList<Tool>()
+                MessageBox.Show(" LOAD - "+ex.Message);
+                //Close();
+            }
+
+            try
             {
-                new Tool(_quik,"SBER"),
-                new Tool(_quik,"VTBR"),
-                new Tool(_quik,"ROSN"),
-                new Tool(_quik,"RUAL"),
-            };
+                //toolList = new List<Tool>()
+                 // toolList = new BindingList<Tool>()
+                 // {
+                 //     new Tool(_quik,"SBER"),
+                 //     new Tool(_quik,"VTBR"),
+                 //     new Tool(_quik,"ROSN"),
+                 //     new Tool(_quik,"RUAL"),
+                 // }; 
+            }
+            catch (Exception СreateTool)
+            {
+                Console.WriteLine("СreateTool "+СreateTool); 
+            }
 
-            DataGrdTools.ItemsSource = toolList;
-
-            toolList.ListChanged += ToolList_ListChanged;
+            if (toolList != null)
+            {
+                DataGrdTools.ItemsSource = toolList;
+                //toolList.ListChanged += ToolList_ListChanged;
+            } 
         }
 
         private void ToolList_ListChanged(object sender, ListChangedEventArgs e)
         {
-            if (e.ListChangedType == ListChangedType.ItemAdded
+            /*if (e.ListChangedType == ListChangedType.ItemAdded
                 || e.ListChangedType == ListChangedType.ItemDeleted
                 || e.ListChangedType == ListChangedType.ItemChanged)
             {
@@ -86,13 +116,32 @@ namespace QUIKSharpTEST2
                     MessageBox.Show(ex.Message);
                     Close();
                 }
-            }
+            }*/
+        }
+
+        private void MainWind_Closed(object sender, EventArgs e)
+        {
+            //СlassSaveLoadFiles.SaveData(toolList); 
         }
 
         void Demonsracia(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("Абра-Кадабра");
+            var Lst = new List<string>();
+            foreach (var item in toolList)
+            {
+                Lst.Add(item.SecurityCode);
+            }
+            using (StreamWriter writer = File.CreateText(Path))
+            {
+                string output = JsonConvert.SerializeObject(Lst);
+                //writer.Write(output);
+                writer.WriteLine(output);
+            }
+
+            //СlassSaveLoadFiles.SaveData(toolList);
+            //MessageBox.Show("Абра-Кадабра");
         }
+
         private Quik СreateQuik()
         {
             try

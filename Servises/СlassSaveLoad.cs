@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Shapes;
 using Newtonsoft.Json;
 
 namespace QUIKSharpTEST2.Servises
@@ -28,16 +29,18 @@ namespace QUIKSharpTEST2.Servises
 
             using (var reader = File.OpenText(Path))
             {
-                var Files = reader.ReadToEnd();
+                 var Files = reader.ReadToEnd();
+                //var Files = reader.ReadLine();
                 return JsonConvert.DeserializeObject<BindingList<Tool>>(Files);
             }
         }
-
-        public void SaveData(object litoolListst)
+         
+        public void SaveData(object toolList)
         {
             using (StreamWriter writer = File.CreateText(Path))
             {
-                string output = JsonConvert.SerializeObject(litoolListst);
+                string output = JsonConvert.SerializeObject(toolList);
+                //writer.Write(output);
                 writer.WriteLine(output);
             }
         }

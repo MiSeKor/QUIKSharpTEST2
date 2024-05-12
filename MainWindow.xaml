@@ -5,14 +5,15 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:QUIKSharpTEST2"
         mc:Ignorable="d"
-        Title="TestQuik# v2" Height="255" Width="680" Loaded="MainWind_Loaded">
+        Title="TestQuik# v2" Height="255" Width="710" Loaded="MainWind_Loaded" Closed="MainWind_Closed">
     <Grid>
         <DataGrid x:Name="DataGrdTools" FontSize="16" FontWeight="Bold" Margin="10" AutoGenerateColumns="False">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="№" Width="30" IsReadOnly="True"/>
                 <DataGridTextColumn Binding="{Binding Path = SecurityCode}" Header="Tool" Width="60" IsReadOnly="True"/>
                 <DataGridCheckBoxColumn Binding="{Binding Path = Isactiv, UpdateSourceTrigger=PropertyChanged}" Header="IsActiv" Width="60" IsReadOnly="False"/>
-                <DataGridComboBoxColumn  Header="Buy/Sel" Width="70" IsReadOnly="False"/>
+                <DataGridComboBoxColumn SelectedItemBinding="{Binding Path=Operation}"
+                                        Header="Buy/Sel" Width="70" IsReadOnly="False"/> 
                 <DataGridTextColumn Binding="{Binding Path = LastPrice}" Header="LastPrice" Width="100" IsReadOnly="True"/>
                 <DataGridTextColumn Binding="{Binding Path = Positions}" Header="Position" Width="50" IsReadOnly="True"/>
                 <DataGridTextColumn Binding="{Binding Path = PriceAccuracy}" Header="PriceAccur" Width="50" IsReadOnly="True"/>
@@ -28,6 +29,13 @@
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <Button Click="Demonsracia" Content="Sel"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn  Header="ComboBox">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <ComboBox Height="20"/>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>

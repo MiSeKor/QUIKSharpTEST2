@@ -5,7 +5,9 @@ using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
-using System.Threading.Tasks; 
+using System.Threading.Tasks;
+using System.Windows;
+
 //
 //  Уроки C# – Синтаксис, Директивы, Классы, Методы – Урок 2 
 //***********************************************************
@@ -35,7 +37,7 @@ public class Tool : INotifyPropertyChanged//: MainWindow // <--наследов�
     /// </summary>
     /// <param name="_quik"></param>
     /// <param name="securityCode">Код инструмента</param> 
-    public Tool(Quik quik, string securityCode)
+    public Tool (Quik quik, string securityCode)
     {
         if (quik == null)
         {
@@ -96,6 +98,7 @@ public class Tool : INotifyPropertyChanged//: MainWindow // <--наследов�
                     Console.WriteLine("Tool.GetBaseParam. Ошибка: classCode не определен.");
                     Lot = 0;
                     GuaranteeProviding = 0;
+                    //MessageBox.Show("НЕТ ПОТОКА от провайдера");
                 }
             }
             else
@@ -105,7 +108,7 @@ public class Tool : INotifyPropertyChanged//: MainWindow // <--наследов�
         }
         catch (Exception e)
         {
-            Console.WriteLine("Ошибка в методе GetBaseParam: " + e.Message);
+            Console.WriteLine("Ошибка в методе GetBaseParam: " + e.Message); 
         }
 
         quik.Candles.Subscribe(ClassCode, secCode, CandleInterval.M1).Wait();

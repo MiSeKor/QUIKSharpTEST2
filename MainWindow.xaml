@@ -8,11 +8,11 @@
         Title="TestQuik# v2" Height="310" Width="740" Loaded="MainWind_Loaded" Closed="MainWind_Closed">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="39*"/>
-            <RowDefinition Height="200*"/>
+            <RowDefinition Height="17*"/>
+            <RowDefinition Height="130*"/>
         </Grid.RowDefinitions>
         <StackPanel Grid.Row="0">
-            <Grid Height="30" HorizontalAlignment="Stretch" Margin="10">
+            <Grid Height="28" HorizontalAlignment="Stretch" Margin="1" Width="734">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"></ColumnDefinition>
                     <ColumnDefinition Width="*"></ColumnDefinition>
@@ -32,12 +32,13 @@
                          VerticalAlignment="Center" Width="120"  FontSize="13" FontWeight="Bold"/>
             </Grid>
         </StackPanel>
-        <DataGrid x:Name="DataGrdTools" FontSize="16" FontWeight="Bold" Margin="10" AutoGenerateColumns="False" Grid.Row="1">
+        <DataGrid x:Name="DataGrdTools" FontSize="16" FontWeight="Bold" Margin="10,10,10,10" Grid.Row="1">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="№" Width="30" IsReadOnly="True"/>
                 <DataGridTextColumn Binding="{Binding Path = SecurityCode}" Header="Tool" Width="60" IsReadOnly="True"/>
                 <DataGridCheckBoxColumn Binding="{Binding Path = Isactiv, UpdateSourceTrigger=PropertyChanged}" Header="IsActiv" Width="60" IsReadOnly="False"/>
-                <DataGridComboBoxColumn SelectedItemBinding="{Binding Path=Operation}"
+                <DataGridComboBoxColumn ItemsSource="{Binding Source = Operation}"
+                                         
                                         Header="Buy/Sel" Width="70" IsReadOnly="False"/>
                 <DataGridTextColumn Binding="{Binding Path = LastPrice}" Header="LastPrice" Width="100" IsReadOnly="True"/>
                 <DataGridTextColumn Binding="{Binding Path = Positions}" Header="Position" Width="50" IsReadOnly="True"/>
@@ -57,10 +58,10 @@
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
-                <DataGridTemplateColumn  Header="ComboBox">
+                <DataGridTemplateColumn  Header="ComboBox" >
                     <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <ComboBox Height="20"/>
+                        <DataTemplate >
+                            <ComboBox  ItemsSource="{Binding Source = Operation}" />
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>

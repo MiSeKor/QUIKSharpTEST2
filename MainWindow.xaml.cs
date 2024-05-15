@@ -96,12 +96,10 @@ namespace QUIKSharpTEST2
                 toolList.Add(new Tool(_quik, TextBoxAdd.Text));
                 TextBoxAdd.Text = "";
             } 
-        }
+        } 
 
         void Demonsracia(object sender, RoutedEventArgs e)
-        {
-
-
+        { 
             //СlassSaveLoadFiles.SaveData(toolList);
             MessageBox.Show("Абра-Кадабра");
         }

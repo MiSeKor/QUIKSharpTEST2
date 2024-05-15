@@ -21,7 +21,8 @@ public class Tool : INotifyPropertyChanged//: MainWindow // <--наследов�
     //public Window2 wnd2 => (Window2)Application.Current.MainWindow;
     private decimal lastPrice;  
     private decimal positions; 
-    private bool isactiv; 
+    private bool isactiv = false;
+    private Operation operation = Operation.Buy;
 
     public event PropertyChangedEventHandler PropertyChanged;
 
@@ -225,9 +226,7 @@ public class Tool : INotifyPropertyChanged//: MainWindow // <--наследов�
     {
         get {return lastPrice; }
         set
-        {
-            if (lastPrice == value)
-                return;
+        { 
             lastPrice = value;
             OnPropertyChanged("LastPrice"); 
         } 
@@ -240,9 +239,7 @@ public class Tool : INotifyPropertyChanged//: MainWindow // <--наследов�
     {
         get {return positions;}
         set
-        {
-            if(positions == value)
-                return;
+        { 
             positions = value;
             OnPropertyChanged("Positions");
         }
@@ -250,8 +247,16 @@ public class Tool : INotifyPropertyChanged//: MainWindow // <--наследов�
     /// <summary>
     ///     Buy / Sel
     /// </summary>
-    public Operation Operation { get; set; } = Operation.Buy;
-
+    public Operation Operation // { get; set; } = Operation.Buy;
+    {
+        get { return operation; }
+        set
+        { 
+            operation = value;
+            OnPropertyChanged("Operation");
+        }
+    }
+     
     /// <summary>
     ///     Статус активности
     /// </summary>
@@ -259,9 +264,7 @@ public class Tool : INotifyPropertyChanged//: MainWindow // <--наследов�
     {
         get { return isactiv; }
         set
-        {
-            if (isactiv == value)
-                return;
+        { 
             isactiv = value;
             OnPropertyChanged("Isactiv");
         }

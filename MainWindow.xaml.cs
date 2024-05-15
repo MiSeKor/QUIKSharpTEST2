@@ -70,7 +70,7 @@ namespace QUIKSharpTEST2
 
             if (toolList != null)
             {
-                DataGrdTools.ItemsSource = toolList;
+                //DataGrdTools.ItemsSource = toolList;
             } 
         }
          
@@ -91,11 +91,11 @@ namespace QUIKSharpTEST2
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            if (TextBoxAdd.Text != "")
-            {
-                toolList.Add(new Tool(_quik, TextBoxAdd.Text));
-                TextBoxAdd.Text = "";
-            } 
+            // if (TextBoxAdd.Text != "")
+            // {
+            //     toolList.Add(new Tool(_quik, TextBoxAdd.Text));
+            //     TextBoxAdd.Text = "";
+            // } 
         } 
 
         void Demonsracia(object sender, RoutedEventArgs e)

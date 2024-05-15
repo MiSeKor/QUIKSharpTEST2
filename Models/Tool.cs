@@ -1,6 +1,7 @@
 ﻿using QuikSharp;
 using QuikSharp.DataStructures;
 using QuikSharp.DataStructures.Transaction;
+using QUIKSharpTEST2.Models;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -11,7 +12,7 @@ using System.Windows;
 //
 //  Уроки C# – Синтаксис, Директивы, Классы, Методы – Урок 2 
 //***********************************************************
-public class Tool : INotifyPropertyChanged//: MainWindow // <--наследование https://youtu.be/MZ0og1DNcCg?si=XMlLSsIsn5CqSXCU&t=1920
+public class Tool : ViewModelBase //: MainWindow // <--наследование https://youtu.be/MZ0og1DNcCg?si=XMlLSsIsn5CqSXCU&t=1920
 {
 
     private readonly Quik _quik;
@@ -224,12 +225,8 @@ public class Tool : INotifyPropertyChanged//: MainWindow // <--наследов�
     /// </summary>
     public decimal LastPrice
     {
-        get {return lastPrice; }
-        set
-        { 
-            lastPrice = value;
-            OnPropertyChanged("LastPrice"); 
-        } 
+        get => lastPrice;
+        set => SetField(ref lastPrice, value); 
     }
 
     /// <summary>
@@ -237,24 +234,16 @@ public class Tool : INotifyPropertyChanged//: MainWindow // <--наследов�
     /// </summary>
     public decimal Positions //{ get; private set; }
     {
-        get {return positions;}
-        set
-        { 
-            positions = value;
-            OnPropertyChanged("Positions");
-        }
+        get => positions;
+        set => SetField(ref positions, value); 
     }
     /// <summary>
     ///     Buy / Sel
     /// </summary>
     public Operation Operation // { get; set; } = Operation.Buy;
     {
-        get { return operation; }
-        set
-        { 
-            operation = value;
-            OnPropertyChanged("Operation");
-        }
+        get => operation;
+        set => SetField(ref operation, value); 
     }
      
     /// <summary>
@@ -262,12 +251,8 @@ public class Tool : INotifyPropertyChanged//: MainWindow // <--наследов�
     /// </summary>
     public bool Isactiv
     {
-        get { return isactiv; }
-        set
-        { 
-            isactiv = value;
-            OnPropertyChanged("Isactiv");
-        }
+        get => isactiv;
+        set => SetField(ref isactiv, value); 
     }
 
     /// <summary>

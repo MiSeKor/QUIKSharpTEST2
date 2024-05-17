@@ -17,6 +17,7 @@ using System.Windows.Shapes;
 using QUIKSharpTEST2.Servises;
 using System.IO;
 using Newtonsoft.Json;
+using System.Collections.ObjectModel; 
 
 namespace QUIKSharpTEST2
 {
@@ -28,38 +29,49 @@ namespace QUIKSharpTEST2
         //      https://youtu.be/Mb3S2IK3NzI?si=jD-0e_BTP6PYbaOb 
         //СПИСОК ДЕЛ НА C# WPF ОТ НАЧАЛА ДО КОНЦА | DATAGRID | JSON ПАРСИНГ РАБОТА С ФАЙЛАМИ
         //
-
+        public Quik _quik;
         private readonly string Path = $"{Environment.CurrentDirectory}\\ListTools.json";
-        private СlassSaveLoad СlassSaveLoadFiles;
-        public BindingList<Tool> toolList;
-        public Quik _quik; 
-        private Tool Sber, Vtbr, Rosn; 
-        private Tool _tool;
+        //private СlassSaveLoad СlassSaveLoadFiles;
+        //public BindingList<Tool> toolList;
+        
+        //private Tool Sber, Vtbr, Rosn; 
+        //private Tool _tool;
+        private MainVM MV = new MainVM(); 
         public MainWindow()
         {
             InitializeComponent();
+            DataContext = MV;
+        }
+
+        public Tool AddTool(string SecKod)
+        {
+            var T = new Tool(_quik, SecKod);
+            return T;
         }
 
         private void MainWind_Loaded(object sender, RoutedEventArgs e)
         {
-            СreateQuik();
+            СreateQuik(); 
+            MV.ListTools = [AddTool("SBER"), AddTool("VTBR"), AddTool("RUAL")];
+
+            //
             //СlassSaveLoadFiles = new СlassSaveLoad(Path);
 
             try
             {
-                toolList = new BindingList<Tool>();
-                var Lst = new List<string>();
-
-                using (var reader = File.OpenText(Path))
-                {
-                    var Files = reader.ReadToEnd();
-                    Lst = JsonConvert.DeserializeObject<List<string>>(Files);
-                }
-
-                foreach (var i in Lst)
-                {
-                    toolList.Add(new Tool(_quik, i));
-                }
+               // toolList = new BindingList<Tool>();
+                // var Lst = new List<string>();
+                //
+                // using (var reader = File.OpenText(Path))
+                // {
+                //     var Files = reader.ReadToEnd();
+                //     Lst = JsonConvert.DeserializeObject<List<string>>(Files);
+                // }
+                // MV = new MainVM( );
+                // foreach (var i in Lst)
+                // {
+                //     toolList.Add(new Tool(_quik, i));
+                // }
 
             }
             catch (Exception ex)
@@ -68,24 +80,24 @@ namespace QUIKSharpTEST2
                 //Close();
             }
 
-            if (toolList != null)
-            {
-                //DataGrdTools.ItemsSource = toolList;
-            } 
+            // if (toolList != null)
+            // {
+            //     //DataGrdTools.ItemsSource = toolList;
+            // } 
         }
-         
+
         private void MainWind_Closed(object sender, EventArgs e)
         {
-            var Lst = new List<string>();
-            foreach (var item in toolList)
-            {
-                Lst.Add(item.SecurityCode);
-            }
-            using (StreamWriter writer = File.CreateText(Path))
-            {
-                string output = JsonConvert.SerializeObject(Lst); 
-                writer.WriteLine(output);
-            }
+            // var Lst = new List<string>();
+            // foreach (var item in toolList)
+            // {
+            //     Lst.Add(item.SecurityCode);
+            // }
+            // using (StreamWriter writer = File.CreateText(Path))
+            // {
+            //     string output = JsonConvert.SerializeObject(Lst); 
+            //     writer.WriteLine(output);
+            // }
             //СlassSaveLoadFiles.SaveData(toolList); 
         }
 
@@ -104,7 +116,13 @@ namespace QUIKSharpTEST2
             MessageBox.Show("Абра-Кадабра");
         }
 
-        private Quik СreateQuik()
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            
+            MV.ListTools.Add(AddTool("LKOH"));
+        }
+
+         private Quik СreateQuik()
         {
             try
             {
@@ -131,7 +149,7 @@ namespace QUIKSharpTEST2
             }
 
             return _quik;
-        }
- 
+        } 
+
     }
 }

@@ -1,13 +1,17 @@
 ﻿using QuikSharp;
 using QuikSharp.DataStructures;
-using QuikSharp.DataStructures.Transaction;
-using QUIKSharpTEST2.Models;
+using QuikSharp.DataStructures.Transaction; 
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows;
+using QUIKSharpTEST2;
+using Condition = QuikSharp.DataStructures.Condition;
 
 //
 //  Уроки C# – Синтаксис, Директивы, Классы, Методы – Урок 2 
@@ -22,17 +26,13 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
     //public Window2 wnd2 => (Window2)Application.Current.MainWindow;
     private decimal lastPrice;  
     private decimal positions; 
+    private decimal _StepLevel = (decimal)0.001; 
+    private decimal _Cels = 1; 
     private bool isactiv = false;
+    private int _Levels = 5;
+    private int _Quantity = 5;
     private Operation operation = Operation.Buy;
-
-    public event PropertyChangedEventHandler PropertyChanged;
-
-    protected virtual void OnPropertyChanged(string propertyName = "")
-    {
-        // знак ? для проверки на Null
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName)); 
-    }
-
+ 
     //MainWindow wnd = new MainWindow();
     /// <summary>
     ///     Конструктор класса
@@ -160,8 +160,14 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
 
     private void Events_OnParam(Param par)
     {
-        if (par.SecCode == SecurityCode) 
-            GetLastPrice(); 
+        if (par.SecCode == SecurityCode)
+        {
+            GetLastPrice();
+            if (Isactiv)
+            {
+
+            }
+        }  
     }
 
     private void Events_OnTransReply(TransactionReply transReply)
@@ -206,6 +212,70 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
         //     wnd.Log(orderbook.sec_code + ":  bestBuy - " + bestBuy.price + " = " + bestBuy.quantity + " bestSell - " + bestSell.price + " = " + bestSell.quantity+ ",  this.LastPrice = " +this.LastPrice.ToString());
         //
         // } 
+    }
+
+    async Task TakeProfit_StopLoss(Tool tool, decimal price, Operation Bue_Sell, StopOrderType sot)
+    {
+    https://youtu.be/HWpMYBZCUU4?si=6-wo40ymV2TQ1jF9
+        try
+        {
+            decimal pr1, pr2, pr3; Condition UppLou;
+            if (Bue_Sell == Operation.Buy)  //если купить то по наименьшей цэне
+            {
+                UppLou = Condition.LessOrEqual;
+                pr1 = (tool.LastPrice - (tool.LastPrice * (decimal)0.01));// для ТейкПрофит
+                var pr11 = (pr1 % tool.Step);
+                if (pr11 != 0) pr1 = pr1 - pr11;
+
+                pr2 = (tool.LastPrice + (tool.LastPrice * (decimal)0.001));  //для СтопЛос стоп цена, остановить убыток для шора
+                var pr22 = (pr2 % tool.Step);
+                if (pr22 != 0) pr2 = pr2 - pr22;
+
+                pr3 = pr2 + (pr2 * (decimal)0.0002);      // для СтопЛос цена покупки, остановить убыток для шора
+                var pr33 = (pr3 % tool.Step);
+                if (pr33 != 0) pr3 = pr3 - pr33;
+            }
+            else                            //если продать то по наибольшей цэне
+            {
+                UppLou = Condition.MoreOrEqual;
+                pr1 = (tool.LastPrice + (tool.LastPrice * (decimal)0.01));// для ТейкПрофит
+                var pr11 = (pr1 % tool.Step);
+                if (pr11 != 0) pr1 = pr1 - pr11;
+
+                pr2 = (tool.LastPrice - (tool.LastPrice * (decimal)0.001));  //для СтопЛос стоп цена, остановить убыток для шора
+                var pr22 = (pr2 % tool.Step);
+                if (pr22 != 0) pr2 = pr2 - pr22;
+
+                pr3 = pr2 - (pr2 * (decimal)0.0002);      // для СтопЛос цена покупки, остановить убыток для шора
+                var pr33 = (pr3 % tool.Step);
+                if (pr33 != 0) pr3 = pr3 - pr33;
+            }
+
+            StopOrder stopOrder = new StopOrder()
+            {
+                ClientCode = tool.СlientCode,
+                Account = tool.AccountID,
+                ClassCode = tool.ClassCode,
+                SecCode = tool.SecurityCode,
+                Offset = (decimal)0.01,//Math.Round(5 * tool.Step, tool.PriceAccuracy),
+                OffsetUnit = OffsetUnits.PERCENTS,
+                Spread = (decimal)0.01,//Math.Round(1 * tool.Step, tool.PriceAccuracy),
+                SpreadUnit = OffsetUnits.PERCENTS,
+                StopOrderType = sot,
+                Condition = UppLou,
+                ConditionPrice = Math.Round(pr1, tool.PriceAccuracy),
+                ConditionPrice2 = Math.Round(pr2, tool.PriceAccuracy), //не нужна для тей-профит
+                Price = Math.Round(pr3, tool.PriceAccuracy),  //не нужна для тей-профит
+                Operation = Bue_Sell,
+                Quantity = 1,
+            };
+
+            await _quik.StopOrders.CreateStopOrder(stopOrder).ConfigureAwait(false);
+        }
+        catch (Exception exception)
+        {
+            MessageBox.Show(" LOAD - " + exception.Message); ;
+        }
     }
 
     private void CandlesOnNewCandle(Candle candle)
@@ -253,6 +323,42 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
     {
         get => isactiv;
         set => SetField(ref isactiv, value); 
+    }
+
+    /// <summary>
+    /// Количество уровней
+    /// </summary>
+    public int Levels
+    {
+        get => _Levels;
+        set => SetField(ref _Levels, value);
+    }
+
+    /// <summary>
+    /// Шаг сетки
+    /// </summary>
+    public decimal StepLevel
+    {
+        get => _StepLevel;
+        set => SetField(ref _StepLevel, value);
+    }
+
+    /// <summary>
+    /// Цель %
+    /// </summary>
+    public decimal Cels
+    {
+        get => _Cels;
+        set => SetField(ref _Cels, value);
+    }
+
+    /// <summary>
+    /// Количество лотов
+    /// </summary>
+    public int Quantity
+    {
+        get => _Quantity;
+        set => SetField(ref _Quantity, value);
     }
 
     /// <summary>
@@ -304,3 +410,5 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
 
     #endregion
 } 
+
+

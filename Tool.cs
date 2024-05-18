@@ -29,7 +29,7 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
     private decimal lastPrice;  
     private decimal positions; 
     private decimal _StepLevel = (decimal)0.001; 
-    private decimal _Cels = 1; 
+    private decimal _Cels = (decimal)0.01; 
     private bool isactiv = false;
     private int _Levels = 5;
     private int _Quantity = 5;
@@ -142,9 +142,16 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
         _quik.Events.OnStopOrder += Events_OnStopOrder;
         _quik.Events.OnTransReply += Events_OnTransReply;
         _quik.Events.OnParam += Events_OnParam;
-        _quik.Events.OnDepoLimit += Events_OnDepoLimit; 
+        _quik.Events.OnDepoLimit += Events_OnDepoLimit;
+        _quik.Events.OnAllTrade += Events_OnAllTrade;
     }
 
+    private void Events_OnAllTrade(AllTrade allTrade)
+    { 
+    }
+    // var Stoporders = _quik.StopOrders.GetStopOrders(this.ClassCode, this.SecurityCode).Result;
+    // var orders = _quik.Orders.GetOrders(this.ClassCode, this.SecurityCode).Result;
+  
     private void Log(string s)
     {
         Console.WriteLine(s);
@@ -170,29 +177,21 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
 
     private void Events_OnParam(Param par)
     {
+        if (!Isactiv && par.SecCode == SecurityCode)
+        {
+            KillAllOrders();
+            ListStopOrder.Clear();
+        }
         if (par.SecCode == SecurityCode)
         {
-            GetLastPrice();
             if (Isactiv)
-            { 
+            {
                 //Console.WriteLine(SecurityCode+" Isactiv true");
                 if (this.ListStopOrder.Count == 0)
                 {
                     SetUpNetwork();
-
                 }
-                var listStopOrders = _quik.StopOrders.GetStopOrders().Result;
-                if (listStopOrders != null && listStopOrders.Count > 0)
-                {
-                    
-
-                } 
-            }
-            if (!Isactiv)
-            {
-                KillAllOrders();
-                //Console.WriteLine(SecurityCode+" Isactiv false");
-            }
+            } 
         }  
     }
 
@@ -206,18 +205,17 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
             if (transReply.Status == 3)
             {
                 Console.WriteLine(" Reply ордер № " + transReply.OrderNum + "  TransID - " + transReply.TransID + " Цена: " + transReply.Price + " Объём: " + transReply.Quantity);
-                if (transReply.TransID == ReplyTransIdBufer)
-                {
-                    foreach (var t in ListStopOrder)
-                        if ((decimal)transReply.Price == t.Price)
-                        {
-                            t.TransId = transReply.TransID;
-                            Log("transReply присвоение "+ transReply.TransID.ToString());
-                        }
-                    ReplyTransIdBufer = transReply.TransID;
+ 
+                foreach (var t in ListStopOrder)
+                { 
+                    if (transReply.TransID == t.TransId)
+                    {
+                        //t = transReply.TransID;
+                          //  Log("transReply СОВПАДЕНИЕ " + transReply.TransID.ToString());
+                    }
                 }
 
-                 
+
             }
             if (transReply.Status > 3)
             {
@@ -230,39 +228,35 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
     {
         if (stopOrder.SecCode == SecurityCode)
         { 
-            Console.WriteLine("Стоп-Ордер № - " + stopOrder.OrderNum + ", TransID - " + stopOrder.TransId + ",  SecCode - " + stopOrder.SecCode + " - " + stopOrder.Operation + ", State - " + stopOrder.State);
-            if (stopOrder.Comment.Contains(_Comment))
-            {
-                Log("OnStopOrder совпадение");
-            }
-            else Log("OnStopOrder НЕТ совпадения");
+            Console.WriteLine("Стоп-Ордер № - " + stopOrder.OrderNum + ", TransID - " + stopOrder.TransId + ",  SecCode - " + stopOrder.SecCode + " - " + stopOrder.Operation + ", State - " + stopOrder.State + ", Comment - " + stopOrder.Comment);
+
         }
     }
 
     private void Events_OnOrder(Order order)
-    { int i = 0;
+    {
+
         if (order.SecCode == SecurityCode)
         {
-            // if (order.TransID != BuferTransID)
-            // {} 
-            foreach (var spOrder in ListStopOrder)
-            {
-                Log("На ВХОДЕ TransID " + order.TransID + " сравнение с " + spOrder.TransId);
-                    // if (order.TransID == spOrder.TransId)
-                    // {
-                    //     Console.WriteLine(spOrder.TransId + " Удален из списка"); 
-                    //     ListStopOrder.Remove(spOrder);
-                    // }
-                    i++;
-                    Log(i.ToString());
-            }
+            // if (order.TransID == BuferTransID)
+            // {}
+                // var listOrders = _quik.Orders.GetOrders().Result;
+                // if (listOrders != null && listOrders.Count > 0)
+                // {}
+                    foreach (var spOrder in this.ListStopOrder)
+                    {
+                        if (order.TransID == spOrder.TransId && order.State == State.Completed)
+                        {
+                            this.ListStopOrder.Remove(spOrder);  
+                            var cel = spOrder.ConditionPrice * this.Cels;
+                            cel = ((cel % this.Step) != 0) ? cel - (cel % this.Step) : cel;
 
-                // if (order.TransID != BuferTransID)
-                // {
-                //     BuferTransID = order.TransID;
-                //     Console.WriteLine(BuferTransID.ToString() + " ===BuferTransID===");
-                // }
-            
+                            var op = spOrder.Operation == Operation.Buy? operation = Operation.Sell : operation = Operation.Buy;
+                            CreateStopOrder(spOrder.ConditionPrice + cel, op);
+                        }
+                    }
+
+                
             Console.WriteLine("Оrder № - " + order.OrderNum + ", TransID - " + order.TransID + ",  SecCode - " + order.SecCode + " - " + order.Operation + ", State - " + order.State);
         }
     }
@@ -292,7 +286,7 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
             //wnd.Dispatcher.Invoke(new Action(() => {}));
             //await Task.Run(() => { });  
             ListStopOrder.Add(CreateStopOrder(pr,Operation.Buy).Result);
-             //var O = CreateStopOrder(pr, Operation.Buy);
+            //CreateStopOrder(pr, Operation.Buy);
             //     await Task.Run(() => {  });
             if (flag)
             {
@@ -325,10 +319,11 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
                 // Price = Math.Round(pr3, this.PriceAccuracy),  //не нужна для тей-профит
                 Operation = BuySel,
                 Quantity = this.Quantity,
-                Comment = BuySel == Operation.Buy ? (_Comment = "Buy") : (_Comment = "Sel") // похоже коммент совсем бесполезный, нигде в ордерах его нет
+                Comment = "qwerty",//BuySel == Operation.Buy ? (_Comment = "Buy") : (_Comment = "Sel"),// похоже коммент совсем бесполезный, нигде в ордерах его нет
             };
 
-            await _quik.StopOrders.CreateStopOrder(stopOrder).ConfigureAwait(false);
+            var t = await _quik.StopOrders.CreateStopOrder(stopOrder).ConfigureAwait(false);
+            stopOrder.TransId = t;
             return stopOrder; 
     }
     private async Task Closeallpositions()
@@ -349,10 +344,9 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
         }  
     }
     public async Task KillAllOrders()
-    {
-        var Stoporders = _quik.StopOrders.GetStopOrders(this.ClassCode, this.SecurityCode).Result;
+    { 
         var orders = _quik.Orders.GetOrders(this.ClassCode, this.SecurityCode).Result;
-        if (orders.Count != 0 && Stoporders.Count != 0)
+        if (orders.Count != 0)
         {
             foreach (var order in orders)
             {
@@ -361,7 +355,11 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
                     await _quik.Orders.KillOrder(order).ConfigureAwait(true);
                 }
             }
+        }
 
+        var Stoporders = _quik.StopOrders.GetStopOrders(this.ClassCode, this.SecurityCode).Result;
+        if (Stoporders.Count != 0)
+        {
             foreach (var stoporder in Stoporders)
             {
                 if (stoporder.State == State.Active)
@@ -369,9 +367,8 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
                     await _quik.StopOrders.KillStopOrder(stoporder).ConfigureAwait(false);
                 }
             }
-
-            Console.WriteLine(SecurityCode + " Kill All Orders");
         } 
+        Console.WriteLine(SecurityCode + " Kill All Orders"); 
     }
     private void CandlesOnNewCandle(Candle candle)
     {

@@ -17,7 +17,8 @@ using System.Windows.Shapes;
 using QUIKSharpTEST2.Servises;
 using System.IO;
 using Newtonsoft.Json;
-using System.Collections.ObjectModel; 
+using System.Collections.ObjectModel;
+using QuikSharp.DataStructures;
 
 namespace QUIKSharpTEST2
 {
@@ -86,8 +87,33 @@ namespace QUIKSharpTEST2
             // } 
         }
 
-        private void MainWind_Closed(object sender, EventArgs e)
+        async void MainWind_Closed(object sender, EventArgs e)
         {
+            var orders = _quik.Orders.GetOrders().Result;
+            if (orders.Count != 0)
+            {
+                foreach (var order in orders)
+                {
+                    if (order.State == State.Active)
+                    {
+                        await _quik.Orders.KillOrder(order).ConfigureAwait(true);
+                    }
+                }
+            }
+
+            var Stoporders = _quik.StopOrders.GetStopOrders().Result;
+            if (Stoporders.Count != 0)
+            {
+                foreach (var stoporder in Stoporders)
+                {
+                    if (stoporder.State == State.Active)
+                    {
+                        await _quik.StopOrders.KillStopOrder(stoporder).ConfigureAwait(false);
+                    }
+                }
+            }
+
+
             // var Lst = new List<string>();
             // foreach (var item in toolList)
             // {
@@ -117,8 +143,7 @@ namespace QUIKSharpTEST2
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-            
+        { 
             MV.ListTools.Add(AddTool("LKOH"));
         }
 

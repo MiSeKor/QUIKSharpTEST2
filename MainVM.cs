@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Data;
 using System.Windows.Media;
 
 namespace QUIKSharpTEST2
@@ -29,17 +30,22 @@ namespace QUIKSharpTEST2
             set => SetField(ref _SelectedTool, value);
         }
         #endregion
-        //  public MainVM()
-        // {
-        //     СreateQuik();
-        //     ListTools = new ObservableCollection<Tool>(); 
-        //
-        //    var SBER = new Tool(_quik, "SBER");
-        //    var VTBR = new Tool(_quik, "VTBR");
-        //    var RUAL = new Tool(_quik, "RUAL");
-        //    _ListTools.Add(SBER);
-        //    _ListTools.Add(VTBR);
-        //    _ListTools.Add(RUAL);
-        //} 
+        public enum Operation // Ваш Enum
+        {
+            Buy,
+            Sell
+        }
+        public class EnumToArrayConverter : IValueConverter
+        {
+            public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+            {
+                var rr = Enum.GetValues(value as Type);
+                return rr;
+            }
+            public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+            {
+                return null; // I don't care about this
+            }
+        }
     }
 }

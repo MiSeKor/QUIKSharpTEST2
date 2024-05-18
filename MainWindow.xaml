@@ -18,7 +18,7 @@
             <TextBlock Grid.Row="0" HorizontalAlignment="Left" Width="120"
                        DataContext="{Binding SelectedTool}" Text="{Binding Name}"/>
             <TextBlock Grid.Row="0" HorizontalAlignment="Left" Width="120"
-                       DataContext="{Binding SelectedTool}" Text="{Binding Operation}"/>
+                       DataContext="{Binding SelectedTool}" Text="{Binding operation}"/>
             <TextBlock Grid.Row="0" HorizontalAlignment="Left" Width="120"
                        DataContext="{Binding SelectedTool}" Text="{Binding SecurityCode}"/>
         </StackPanel>
@@ -29,7 +29,7 @@
             <DataGrid  ItemsSource="{Binding ListTools}" AutoGenerateColumns="False" 
                         SelectedItem="{Binding SelectedTool}" Margin="0,10,0,10" Grid.Row="1">
                 <DataGrid.Columns>
-                    <DataGridCheckBoxColumn Header="Isactiv" Width="60" Binding="{Binding Isactiv}"/>
+                    <DataGridCheckBoxColumn Header="Isactiv" Width="60" Binding="{Binding Isactiv, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="False"/>
                     <DataGridTextColumn Header="Tool" Width="60" Binding="{Binding SecurityCode}"/>
                     <DataGridTextColumn Header="LastPrise" Width="60" Binding="{Binding LastPrice}"/>
                     <DataGridTextColumn Header="Positions" Width="60" Binding="{Binding Positions}"/>
@@ -37,7 +37,8 @@
                     <DataGridTextColumn Header="StepLevel" Width="60" Binding="{Binding StepLevel}"/>
                     <DataGridTextColumn Header="Cels" Width="35" Binding="{Binding Cels}"/>
                     <DataGridTextColumn Header="Quantity" Width="60" Binding="{Binding Quantity}"/>
-                    <DataGridComboBoxColumn Header="ComBox" SelectedItemBinding="{Binding Operation}" TextBinding="{Binding Operation}"/>
+                    <DataGridTextColumn Header="ListTransID" Width="60" Binding="{Binding ListStopOrder.Count, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True"/>
+ 
                 </DataGrid.Columns>
             </DataGrid>
         </StackPanel>

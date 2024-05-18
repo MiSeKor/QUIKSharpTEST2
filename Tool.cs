@@ -13,6 +13,7 @@ using System.Windows;
 using QUIKSharpTEST2;
 using Condition = QuikSharp.DataStructures.Condition;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Windows.Controls;
 
 //
@@ -34,11 +35,7 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
     private int _Levels = 5;
     private int _Quantity = 5;
     private ObservableCollection<StopOrder> _ListStopOrder = new ObservableCollection<StopOrder>();
-    private Operation _operation = Operation.Buy;
-    private string _Comment = "a";
-    private string _CommentCel = "c";
-    private long BuferTransID = 1;
-    private long ReplyTransIdBufer = 0;
+    private Operation _operation = Operation.Buy; 
     //MainWindow wnd = new MainWindow();
     /// <summary>
     ///     Конструктор класса
@@ -170,7 +167,9 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
 
     private void Events_OnParam(Param par)
     {
-        if (!Isactiv && par.SecCode == SecurityCode)
+        if(par.SecCode == SecurityCode)GetLastPrice();
+
+        if (!Isactiv && ListStopOrder.Count > 0 && par.SecCode == SecurityCode)
         {
             KillAllOrders();
             ListStopOrder.Clear();
@@ -182,14 +181,17 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
                 SetUpNetwork();
             }
 
-            if (this.ListStopOrder.Count < Quantity)
-            {
-                decimal _min;
-                foreach (var order in ListStopOrder)
-                {
-                    if (order.ConditionPrice < LastPrice)
+            if (this.ListStopOrder.Count < Levels)
+            { 
+                foreach (var order in this.ListStopOrder)
+                { 
+                    if (ListStopOrder[0].ConditionPrice < LastPrice + ListStopOrder[0].ConditionPrice * StepLevel +Step*2)
                     {
-                        _min = order.ConditionPrice;
+                        var otstup = this.ListStopOrder[0].ConditionPrice * this.StepLevel;
+                        otstup = ((otstup % this.Step) != 0) ? otstup - (otstup % this.Step) : otstup;
+                        var op = this.operation == Operation.Buy ? operation = Operation.Sell : operation = Operation.Buy;
+                        this.ListStopOrder.Add(CreateStopOrder(otstup, op).Result);
+                        this.ListStopOrder.Move(this.ListStopOrder.Count-1,0);
                     }
                 }
 

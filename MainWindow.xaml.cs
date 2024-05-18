@@ -147,7 +147,7 @@ namespace QUIKSharpTEST2
             MV.ListTools.Add(AddTool("LKOH"));
         }
 
-         private Quik СreateQuik()
+        private Quik СreateQuik()
         {
             try
             {

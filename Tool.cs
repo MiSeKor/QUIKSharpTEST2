@@ -142,15 +142,8 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
         _quik.Events.OnStopOrder += Events_OnStopOrder;
         _quik.Events.OnTransReply += Events_OnTransReply;
         _quik.Events.OnParam += Events_OnParam;
-        _quik.Events.OnDepoLimit += Events_OnDepoLimit;
-        _quik.Events.OnAllTrade += Events_OnAllTrade;
-    }
-
-    private void Events_OnAllTrade(AllTrade allTrade)
-    { 
-    }
-    // var Stoporders = _quik.StopOrders.GetStopOrders(this.ClassCode, this.SecurityCode).Result;
-    // var orders = _quik.Orders.GetOrders(this.ClassCode, this.SecurityCode).Result;
+        _quik.Events.OnDepoLimit += Events_OnDepoLimit;  
+    } 
   
     private void Log(string s)
     {
@@ -182,16 +175,25 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
             KillAllOrders();
             ListStopOrder.Clear();
         }
-        if (par.SecCode == SecurityCode)
-        {
-            if (Isactiv)
+        if (Isactiv && par.SecCode == SecurityCode)
+        { 
+            if (this.ListStopOrder.Count == 0)
             {
-                //Console.WriteLine(SecurityCode+" Isactiv true");
-                if (this.ListStopOrder.Count == 0)
+                SetUpNetwork();
+            }
+
+            if (this.ListStopOrder.Count < Quantity)
+            {
+                decimal _min;
+                foreach (var order in ListStopOrder)
                 {
-                    SetUpNetwork();
+                    if (order.ConditionPrice < LastPrice)
+                    {
+                        _min = order.ConditionPrice;
+                    }
                 }
-            } 
+
+            }
         }  
     }
 

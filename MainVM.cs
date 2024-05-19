@@ -10,6 +10,7 @@ using System.Windows.Media;
 
 namespace QUIKSharpTEST2
 {
+    //https://www.cyberforum.ru/wpf-silverlight/thread3167641.html
     internal class MainVM : ViewModelBase
     {
         //MainWindow wnd = (MainWindow)App.Current.MainWindow; 
@@ -30,6 +31,12 @@ namespace QUIKSharpTEST2
             set => SetField(ref _SelectedTool, value);
         }
         #endregion
+
+        public void StopEndClosed()
+        {
+            _SelectedTool.KillAllOrders();
+            _SelectedTool.Closeallpositions();
+        }
         public enum Operation // Ваш Enum
         {
             Buy,

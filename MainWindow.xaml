@@ -37,7 +37,7 @@
                     <DataGridTextColumn Header="StepLevel" Width="60" Binding="{Binding StepLevel}"/>
                     <DataGridTextColumn Header="Cels" Width="35" Binding="{Binding Cels}"/>
                     <DataGridTextColumn Header="Quantity" Width="60" Binding="{Binding Quantity}"/>
-                    <DataGridTextColumn Header="ListTransID" Width="60" Binding="{Binding ListStopOrder.Count, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="ListStopOrder" Width="60" Binding="{Binding ListStopOrder.Count, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True"/>
                     
                 </DataGrid.Columns>
             </DataGrid>

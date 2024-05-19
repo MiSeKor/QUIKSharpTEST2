@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 
 namespace QUIKSharpTEST2
 {
+    //https://www.cyberforum.ru/wpf-silverlight/thread3167641.html
     public class ViewModelBase : INotifyPropertyChanged
 
     {

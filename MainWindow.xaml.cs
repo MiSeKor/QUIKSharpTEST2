@@ -143,8 +143,9 @@ namespace QUIKSharpTEST2
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
-        { 
-            MV.ListTools.Add(AddTool("LKOH"));
+        {
+            MV.StopEndClosed();
+            //MV.ListTools.Add(AddTool("LKOH"));
         }
 
         private Quik СreateQuik()

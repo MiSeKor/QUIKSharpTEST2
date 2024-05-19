@@ -31,7 +31,7 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
     private decimal positions; 
     private decimal _StepLevel = (decimal)0.001; 
     private decimal _Cels = (decimal)0.01; 
-    private bool isactiv = false;
+    private bool _isactiv = false;
     private int _Levels = 5;
     private int _Quantity = 5;
     private decimal StopPrice = 0;
@@ -213,7 +213,7 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
             { 
                 this.KillAllOrders();
                 this.Closeallpositions();
-                this.isactiv = false;
+                this.Isactiv = false;
                 Log("СРАБОТАЛ StopPrice");
             }
 
@@ -370,6 +370,7 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
             Console.WriteLine(SecurityCode + " Closeallpositions");
         } 
         this.ListStopOrder.Clear();
+        this.Isactiv = false;
     }
     public async Task KillAllOrders()
     { 
@@ -441,8 +442,8 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
     /// </summary>
     public bool Isactiv
     {
-        get => isactiv;
-        set => SetField(ref isactiv, value); 
+        get => _isactiv;
+        set => SetField(ref _isactiv, value); 
     }
 
     /// <summary>

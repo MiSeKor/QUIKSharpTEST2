@@ -113,7 +113,7 @@ namespace QUIKSharpTEST2
                 }
             }
 
-
+            _quik.StopService();
             // var Lst = new List<string>();
             // foreach (var item in toolList)
             // {
@@ -127,13 +127,9 @@ namespace QUIKSharpTEST2
             //СlassSaveLoadFiles.SaveData(toolList); 
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
+        private void ClosAll(object sender, RoutedEventArgs e)
         {
-            // if (TextBoxAdd.Text != "")
-            // {
-            //     toolList.Add(new Tool(_quik, TextBoxAdd.Text));
-            //     TextBoxAdd.Text = "";
-            // } 
+            MV.StopEndClosed();
         } 
 
         void Demonsracia(object sender, RoutedEventArgs e)
@@ -144,8 +140,8 @@ namespace QUIKSharpTEST2
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            MV.StopEndClosed();
-            //MV.ListTools.Add(AddTool("LKOH"));
+            
+            MV.ListTools.Add(AddTool("LKOH"));
         }
 
         private Quik СreateQuik()

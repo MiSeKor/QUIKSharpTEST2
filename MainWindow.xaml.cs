@@ -37,7 +37,7 @@ namespace QUIKSharpTEST2
         
         //private Tool Sber, Vtbr, Rosn; 
         //private Tool _tool;
-        private MainVM MV = new MainVM(); 
+        private MainVM MV = new(); 
         public MainWindow()
         {
             InitializeComponent();
@@ -53,7 +53,7 @@ namespace QUIKSharpTEST2
         private void MainWind_Loaded(object sender, RoutedEventArgs e)
         {
             СreateQuik(); 
-            MV.ListTools = [AddTool("SBER"), AddTool("VTBR"), AddTool("RUAL")];
+            MV.ListTools = [AddTool("SBER"), AddTool("VTBR"), AddTool("RUAL"), AddTool("GDM4")];
 
             //
             //СlassSaveLoadFiles = new СlassSaveLoad(Path);
@@ -89,7 +89,7 @@ namespace QUIKSharpTEST2
 
         async void MainWind_Closed(object sender, EventArgs e)
         {
-            var orders = _quik.Orders.GetOrders().Result;
+            /*var orders = _quik.Orders.GetOrders().Result;
             if (orders.Count != 0)
             {
                 foreach (var order in orders)
@@ -111,7 +111,7 @@ namespace QUIKSharpTEST2
                         await _quik.StopOrders.KillStopOrder(stoporder).ConfigureAwait(false);
                     }
                 }
-            }
+            }*/
 
             _quik.StopService();
             // var Lst = new List<string>();
@@ -172,6 +172,5 @@ namespace QUIKSharpTEST2
 
             return _quik;
         } 
-
     }
 }

@@ -35,7 +35,7 @@ namespace QUIKSharpTEST2
         public void StopEndClosed()
         {
             _SelectedTool.KillAllOrders();
-            _SelectedTool.Closeallpositions();
+            //_SelectedTool.Closeallpositions();
         }
         public enum Operation // Ваш Enum
         {

@@ -15,6 +15,7 @@ using Condition = QuikSharp.DataStructures.Condition;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows.Controls;
+using System.Runtime.ConstrainedExecution;
 
 //
 //  Уроки C# – Синтаксис, Директивы, Классы, Методы – Урок 2 
@@ -36,7 +37,7 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
     private int _Quantity = 5;
     private decimal StopPrice = 0;
     private bool StopPriceFlag = true;
-    private ObservableCollection<StopOrder> _ListStopOrder = new ObservableCollection<StopOrder>();
+    private ObservableCollection<StopOrder> _ListStopOrder = []; // способ инициализации предложен Визуал Студией
     private Operation _operation = Operation.Buy; 
     //MainWindow wnd = new MainWindow();
     /// <summary>
@@ -89,6 +90,8 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
                     {
                         Console.WriteLine("Получаем 'guaranteeProviding'.");
                         Lot = 1;
+                        Cels = 30;
+                        StepLevel = 15;
                         GuaranteeProviding = Convert.ToDouble(quik.Trading.GetParamEx(ClassCode, SecurityCode, ParamNames.BUYDEPO).Result.ParamValue.Replace('.', separator));
                     }
                     else
@@ -141,23 +144,56 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
         _quik.Events.OnStopOrder += Events_OnStopOrder;
         _quik.Events.OnTransReply += Events_OnTransReply;
         _quik.Events.OnParam += Events_OnParam;
-        _quik.Events.OnDepoLimit += Events_OnDepoLimit;  
-    } 
-  
+        _quik.Events.OnDepoLimit += Events_OnDepoLimit;
+        _quik.Events.OnFuturesClientHolding +=EventsOnOnFuturesClientHolding;
+    }
+ 
     private void Log(string s)
     {
         Console.WriteLine(s);
-    }
+    } 
     private void GetDepoLimit()
     {
-        Positions = Convert.ToDecimal(_quik.Trading.GetDepo(СlientCode, this.FirmID,
-            this.SecurityCode, this.AccountID).Result.DepoCurrentBalance / this.Lot); 
+        if (ClassCode == "SPBFUT")
+        {
+            Positions = Convert.ToDecimal(_quik.Trading.GetFuturesHolding(FirmID, AccountID,
+                this.SecurityCode, 1).Result); // проверить работу этого кода в боевом КВИКЕ
+        }
+        else
+        {
+            var List = _quik.Trading.GetDepoLimits().Result;
+            foreach (var t in List)
+            {
+                if (t.SecCode == SecurityCode && t.LimitKindInt == 1)
+                {
+                    Positions = t.CurrentBalance / this.Lot;
+                }
+            }
+
+            //Positions = Convert.ToDecimal(_quik.Trading.GetDepo(СlientCode, this.FirmID, // <<== ЭТОТ код на боевом КВИКЕ НЕ РАБОТАЕТ
+            //this.SecurityCode, this.AccountID).Result.DepoCurrentBalance / this.Lot);          
+              
+            //Positions = Convert.ToDecimal(_quik.Trading.GetDepoEx(FirmID, СlientCode, SecurityCode,   // <<== ЭТОТ код на боевом КВИКЕ НЕ РАБОТАЕТ
+            //    AccountID, 3).Result.CurrentBalance / this.Lot);
+
+
+
+        }
+
     }
 
     private void GetLastPrice()
     { 
             LastPrice = Convert.ToDecimal(_quik.Trading.GetParamEx(ClassCode, SecurityCode, "LAST").Result.ParamValue
                 .Replace('.', separator)); 
+    }
+
+    private void EventsOnOnFuturesClientHolding(FuturesClientHolding futpos)
+    {
+        if (futpos.secCode == SecurityCode)
+        {
+            GetDepoLimit();
+        }
     }
     private void Events_OnDepoLimit(DepoLimitEx dLimit)
     {
@@ -166,6 +202,9 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
             GetDepoLimit();
         }
     }
+    /// <summary>
+    ///     Расчет отступа размером в Cels от указанной цены
+    /// </summary>
     decimal CelOtstup(decimal price)
     {
         var otstup = price * this.StepLevel;
@@ -173,36 +212,36 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
         return otstup;
     }
     private void Events_OnParam(Param par)
-    { 
+    {
+        decimal otstup;
         if (par.SecCode == SecurityCode)GetLastPrice();
-
-        if (this.ListStopOrder.Count == 1)
-            StopPrice = this.ListStopOrder[0].ConditionPrice - 
-                        CelOtstup(this.ListStopOrder[0].ConditionPrice); // обозначает передел убытка = this.Cels
-
-        if (!Isactiv && ListStopOrder.Count > 0 && par.SecCode == SecurityCode)
-        {
-            KillAllOrders();
-            ListStopOrder.Clear();
-            StopPrice = 0;
-            Log("СРАБОТАЛА ДЕАКТИВАЦИЯ " + this.SecurityCode);
-        }
+         
+        //if (!Isactiv && ListStopOrder.Count > 0 && par.SecCode == SecurityCode)
+        //{
+        //    KillAllOrders();
+        //    ListStopOrder.Clear();
+        //    StopPrice = 0;
+        //    Log("СРАБОТАЛА ДЕАКТИВАЦИЯ " + this.SecurityCode);
+        //}
         if (Isactiv && par.SecCode == SecurityCode)
-        { 
+        {
+            if (this.ListStopOrder.Count == 1)
+                StopPrice = this.ListStopOrder[0].ConditionPrice -
+                            CelOtstup(this.ListStopOrder[0].ConditionPrice); // обозначает передел убытка = this.Cels + стопцена последнего в ListStopOrder ордера
+
             if (this.ListStopOrder.Count == 0 && StopPrice == 0 ||
-                this.ListStopOrder.Count == 0 && StopPrice < this.LastPrice)
+                this.ListStopOrder.Count == 0 && StopPrice < this.LastPrice) //тут нужны еще условия ограничения
             {
                 SetUpNetwork();
                 Log("СРАБОТАЛ SetUpNetwork " + this.SecurityCode);
             }
             //добавление СтопОрдеров
             if (this.ListStopOrder.Count < Levels && LastPrice > ListStopOrder[0].ConditionPrice
-                + CelOtstup(ListStopOrder[0].ConditionPrice) + Step * 10)
+                + CelOtstup(ListStopOrder[0].ConditionPrice) + Step * 5)
             {
                 //var otstup = this.ListStopOrder[0].ConditionPrice * this.StepLevel;
                 //otstup = ((otstup % this.Step) != 0) ? otstup - (otstup % this.Step) : otstup;
-
-                var otstup = CelOtstup(this.ListStopOrder[0].ConditionPrice);
+                otstup = ClassCode == "SPBFUT" ? StepLevel : CelOtstup(this.ListStopOrder[0].ConditionPrice); 
                 //var op = this.operation == Operation.Buy ? operation = Operation.Sell : operation = Operation.Buy;
                 this.ListStopOrder.Add(CreateStopOrder(this.ListStopOrder[0].ConditionPrice + otstup, Operation.Buy).Result);
                 this.ListStopOrder.Move(this.ListStopOrder.Count-1,0);
@@ -227,20 +266,9 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
             if (transReply.Status == 0) Console.WriteLine("Status " + transReply.Status + " Транзакция отправлена серверу");
             if (transReply.Status == 1) Console.WriteLine("Status " + transReply.Status + " Транзакция получена на сервер");
             if (transReply.Status == 2) Console.WriteLine("Status " + transReply.Status + " Ошибка при передаче Транзакции");
-            if (transReply.Status == 3)
+            if (transReply.Status == 3) // это условие срабатывает когда все ТИП ТОП
             {
-                Console.WriteLine(" Reply ордер № " + transReply.OrderNum + "  TransID - " + transReply.TransID + " Цена: " + transReply.Price + " Объём: " + transReply.Quantity);
- 
-                foreach (var t in ListStopOrder)
-                { 
-                    if (transReply.TransID == t.TransId)
-                    {
-                        //t = transReply.TransID;
-                          //  Log("transReply СОВПАДЕНИЕ " + transReply.TransID.ToString());
-                    }
-                }
-
-
+                //Console.WriteLine(" Reply ордер № " + transReply.OrderNum + "  TransID - " + transReply.TransID + " Цена: " + transReply.Price + " Объём: " + transReply.Quantity);
             }
             if (transReply.Status > 3)
             {
@@ -254,36 +282,36 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
         if (stopOrder.SecCode == SecurityCode)
         { 
             Console.WriteLine("Стоп-Ордер № - " + stopOrder.OrderNum + ", TransID - " + stopOrder.TransId + ",  SecCode - " + stopOrder.SecCode + " - " + stopOrder.Operation + ", State - " + stopOrder.State + ", Comment - " + stopOrder.Comment);
-
+             
         }
     }
 
     private void Events_OnOrder(Order order)
     {
+        decimal cel;
 
         if (order.SecCode == SecurityCode)
-        {
-            // if (order.TransID == BuferTransID)
-            // {}
-                // var listOrders = _quik.Orders.GetOrders().Result;
-                // if (listOrders != null && listOrders.Count > 0)
-                // {}
-                    foreach (var spOrder in this.ListStopOrder)
+        { 
+            foreach (var spOrder in this.ListStopOrder)
+            {
+                if (order.TransID == spOrder.TransId && order.State == State.Completed)
+                {
+                    this.ListStopOrder.Remove(spOrder);
+                    if (ClassCode == "SPBFUT")
                     {
-                        if (order.TransID == spOrder.TransId && order.State == State.Completed)
-                        {
-                            this.ListStopOrder.Remove(spOrder);  
-                            var cel = spOrder.ConditionPrice * this.Cels;
-                            cel = ((cel % this.Step) != 0) ? cel - (cel % this.Step) : cel;
-
-                            var op = spOrder.Operation == Operation.Buy? operation = Operation.Sell : operation = Operation.Buy;
-                            CreateStopOrder(spOrder.ConditionPrice + cel, op);
-                            Log("ВЫСТАВЛЕН ОРДЕР НА ПРОДАЖУ по цене: "+ 
-                                spOrder.ConditionPrice + cel+" "+ SecurityCode);
-                        }
+                        cel = this.Cels;
                     }
-
-                
+                    else
+                    {
+                        cel = spOrder.ConditionPrice * this.Cels;
+                        cel = ((cel % this.Step) != 0) ? cel - (cel % this.Step) : cel;
+                    } 
+                    //Operation op = spOrder.Operation == Operation.Buy? op = Operation.Sell : op = Operation.Buy;
+                    CreateStopOrder(spOrder.ConditionPrice + cel, Operation.Sell);
+                    Log("ВЫСТАВЛЕН ОРДЕР НА ПРОДАЖУ по цене: "+ 
+                        spOrder.ConditionPrice + cel+" "+ SecurityCode);
+                }
+            } 
             //Console.WriteLine("Оrder № - " + order.OrderNum + ", TransID - " + order.TransID + ",  SecCode - " + order.SecCode + " - " + order.Operation + ", State - " + order.State);
         }
     }
@@ -317,19 +345,27 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
             //     await Task.Run(() => {  });
             if (flag)
             {
-                otstup = pr * this.StepLevel;
-                otstup = ((otstup % this.Step) != 0) ? otstup - (otstup % this.Step) : otstup;
-                flag = false;
+                if (ClassCode == "SPBFUT")
+                {
+                    otstup = StepLevel;
+                }
+                else
+                {
+                    otstup = pr * this.StepLevel;
+                    otstup = ((otstup % this.Step) != 0) ? otstup - (otstup % this.Step) : otstup;
+                    flag = false;
+                }
+;
             }
 
-            pr = pr - otstup;
+            pr -= otstup;   // тоже самое что и: pr = pr - otstup; 
         }
 
         return ListStopOrder;
     }
     private async Task<StopOrder> CreateStopOrder(decimal pr, Operation BuySel)
     { 
-            StopOrder stopOrder = new StopOrder()
+            StopOrder stopOrder = new()
             {
                 ClientCode = this.СlientCode,
                 Account = this.AccountID,
@@ -355,8 +391,19 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
     }
     public async Task Closeallpositions()
     {
-        var KolLot = Positions; 
+        decimal KolLot;
 
+        if (ClassCode == "SPBFUT")
+        {
+            var FiuchersPos = _quik.Trading.GetFuturesHolding(FirmID, AccountID, SecurityCode, 0).Result.totalNet;
+            KolLot = (decimal)FiuchersPos;
+        }
+        else
+        {
+            KolLot = Positions;
+        } 
+            
+             
         if (KolLot != 0)
         {
             if (KolLot != null && KolLot > 0)
@@ -368,12 +415,13 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
                 await _quik.Orders.SendMarketOrder(this.ClassCode, this.SecurityCode, this.AccountID, Operation.Buy, (int)-KolLot).ConfigureAwait(false);
             }
             Console.WriteLine(SecurityCode + " Closeallpositions");
-        } 
-        this.ListStopOrder.Clear();
-        this.Isactiv = false;
+        }  
     }
     public async Task KillAllOrders()
-    { 
+    {
+        this.ListStopOrder.Clear();
+        this.Isactiv = false;
+
         var orders = _quik.Orders.GetOrders(this.ClassCode, this.SecurityCode).Result;
         if (orders.Count != 0)
         {
@@ -391,7 +439,7 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
         {
             foreach (var stoporder in Stoporders)
             {
-                if (stoporder.State == State.Active)
+                if (stoporder.State == State.Active && stoporder.Operation == this.operation)
                 {
                     await _quik.StopOrders.KillStopOrder(stoporder).ConfigureAwait(false);
                 }
@@ -447,7 +495,7 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
     }
 
     /// <summary>
-    /// Количество уровней
+    /// Количество уровней сетки
     /// </summary>
     public int Levels
     {

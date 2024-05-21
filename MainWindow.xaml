@@ -37,15 +37,26 @@
                     <DataGridTextColumn Header="StepLevel" Width="60" Binding="{Binding StepLevel}"/>
                     <DataGridTextColumn Header="Cels" Width="35" Binding="{Binding Cels}"/>
                     <DataGridTextColumn Header="Quantity" Width="60" Binding="{Binding Quantity}"/>
-                    <DataGridTextColumn Header="ListStopOrder" IsReadOnly="True" Width="60" Binding="{Binding ListStopOrder.Count, UpdateSourceTrigger=PropertyChanged}"/>
+                    <DataGridTextColumn Header="StpOrdBuy" IsReadOnly="True" Width="70" Binding="{Binding ListStopOrder.Count, UpdateSourceTrigger=PropertyChanged}"/>
 
-                    <DataGridTemplateColumn Header="ClosAll" Width="65">
+                    <DataGridTemplateColumn Header="ClosOrd" Width="60">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <Button Click="ClosAll" Content="ClosAll"/>
+                                <Button Click="ClosAll" Content="OrdBuy"/>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
+
+                    <DataGridTemplateColumn Width="*" Header="Buttons">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Button>
+                                     
+                                </Button>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+ 
 
                 </DataGrid.Columns>
             </DataGrid>

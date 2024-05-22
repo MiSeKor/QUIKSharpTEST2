@@ -42,6 +42,7 @@ namespace QUIKSharpTEST2
         {
             InitializeComponent();
             DataContext = MV;
+            //Resources = EnumToArrayConverter;
         }
 
         public Tool AddTool(string SecKod)

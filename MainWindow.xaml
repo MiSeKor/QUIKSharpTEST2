@@ -5,15 +5,26 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
         xmlns:quikSharpTest2="clr-namespace:QUIKSharpTEST2"
         xmlns:system="clr-namespace:System;assembly=mscorlib"
+        xmlns:local="clr-namespace:QuikSharp.DataStructures;assembly=QUIKSharp"
         d:DataContext="{d:DesignInstance Type=quikSharpTest2:MainVM}"
         mc:Ignorable="d"
         Title="TestQuik# v2" Height="325" Width="740" Loaded="MainWind_Loaded" Closed="MainWind_Closed">
-
+    <Window.Resources>
+        <quikSharpTest2:EnumToArrayConverter x:Key="EnumToArrayConverter"/>
+    </Window.Resources>
     <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="49*"/>
             <RowDefinition Height="240*"/>
         </Grid.RowDefinitions>
+        <!--<TextBlock>
+            <Run>В DataDrid выбрано - Name:</Run> 
+            <Run Text="{Binding SelectedTool.Name}"></Run>
+            <Run>Description:</Run>
+            <Run Text="{Binding SelectedTool.operation}"></Run>
+            <Run>Значение ComboBox:</Run>
+            <Run Text="{Binding SelectedTool.SecurityCode}"></Run>
+        </TextBlock>-->
         <StackPanel Grid.Row="0" Orientation="Vertical">
             <TextBlock Grid.Row="0" HorizontalAlignment="Left" Width="120"
                        DataContext="{Binding SelectedTool}" Text="{Binding Name}"/>
@@ -26,7 +37,7 @@
             <Button HorizontalAlignment="Center" Content="Button" Height="24" Width="72" Click="Button_Click_1" RenderTransformOrigin="0.292,1.877"/>
         </StackPanel>
         <StackPanel Grid.Row="1" Margin="0,5,0,0">
-            <DataGrid  ItemsSource="{Binding ListTools}" AutoGenerateColumns="False" 
+            <DataGrid Name="DataGrid1"  ItemsSource="{Binding ListTools}" AutoGenerateColumns="False" 
                         SelectedItem="{Binding SelectedTool}" Margin="0,10,0,10" Grid.Row="1">
                 <DataGrid.Columns>
                     <DataGridCheckBoxColumn Header="Isactiv" Width="60" Binding="{Binding Isactiv, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="False"/>
@@ -47,20 +58,23 @@
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
 
-                    <DataGridTemplateColumn Width="*" Header="Buttons">
+                    <DataGridTemplateColumn Width="*" Header="ComboBox - Enums">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <Button>
-                                     
-                                </Button>
+                                <ComboBox ItemsSource="{Binding Source={x:Type local:Operation}, Converter={StaticResource EnumToArrayConverter}}" SelectedItem="{Binding operation, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding}"></TextBlock>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
- 
-
+                    </DataGridTemplateColumn> 
                 </DataGrid.Columns>
             </DataGrid>
         </StackPanel>
 
     </Grid>
+
 </Window>

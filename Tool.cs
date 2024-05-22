@@ -158,6 +158,7 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
         {
             Positions = Convert.ToDecimal(_quik.Trading.GetFuturesHolding(FirmID, AccountID,
                 this.SecurityCode, 1).Result); // проверить работу этого кода в боевом КВИКЕ
+            //futLimit = _quik.Trading.GetFuturesLimit(tool.FirmID, tool.AccountID, 0, "SUR").Result;
         }
         else
         {
@@ -174,10 +175,7 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
             //this.SecurityCode, this.AccountID).Result.DepoCurrentBalance / this.Lot);          
               
             //Positions = Convert.ToDecimal(_quik.Trading.GetDepoEx(FirmID, СlientCode, SecurityCode,   // <<== ЭТОТ код на боевом КВИКЕ НЕ РАБОТАЕТ
-            //    AccountID, 3).Result.CurrentBalance / this.Lot);
-
-
-
+            //    AccountID, 3).Result.CurrentBalance / this.Lot); 
         }
 
     }

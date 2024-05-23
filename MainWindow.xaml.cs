@@ -42,7 +42,6 @@ namespace QUIKSharpTEST2
         {
             InitializeComponent();
             DataContext = MV;
-            //Resources = EnumToArrayConverter;
         }
 
         public Tool AddTool(string SecKod)
@@ -139,10 +138,10 @@ namespace QUIKSharpTEST2
             MessageBox.Show("Абра-Кадабра");
         }
 
-        private void Button_Click_1(object sender, RoutedEventArgs e)
+        private void Button_Click_AddTool(object sender, RoutedEventArgs e)
         {
             
-            MV.ListTools.Add(AddTool("LKOH"));
+            MV.ListTools.Add(AddTool(txBoxAddTool.Text));
         }
 
         private Quik СreateQuik()

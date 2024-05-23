@@ -37,11 +37,11 @@ namespace QUIKSharpTEST2
             _SelectedTool.KillAllOrders();
             //_SelectedTool.Closeallpositions();
         }
-        public enum Operation // Ваш Enum
-        {
-            Buy,
-            Sell
-        }
+        //public enum Operation // Ваш Enum
+        //{
+        //    Buy,
+        //    Sell
+        //}
         public class EnumToArrayConverter : IValueConverter
         {
             public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)

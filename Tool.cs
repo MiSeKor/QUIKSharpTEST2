@@ -105,10 +105,10 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
                 }
                 else
                 {
+                    MessageBox.Show("НЕТ ТАКОГО ИНСТРУМЕНТА"); return;
                     Console.WriteLine("Tool.GetBaseParam. Ошибка: classCode не определен.");
                     Lot = 0;
-                    GuaranteeProviding = 0;
-                    //MessageBox.Show("НЕТ ПОТОКА от провайдера");
+                    GuaranteeProviding = 0; 
                 }
             }
             else
@@ -118,7 +118,7 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
         }
         catch (Exception e)
         {
-            Console.WriteLine("Ошибка в методе GetBaseParam: " + e.Message); 
+            Console.WriteLine("Ошибка в методе GetBaseParam: " + e.Message) ; 
         }
 
         quik.Candles.Subscribe(ClassCode, secCode, CandleInterval.M1).Wait();
@@ -157,23 +157,26 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
         if (ClassCode == "SPBFUT")
         {
             Positions = Convert.ToDecimal(_quik.Trading.GetFuturesHolding(FirmID, AccountID,
-                this.SecurityCode, 1).Result); // проверить работу этого кода в боевом КВИКЕ
-            //futLimit = _quik.Trading.GetFuturesLimit(tool.FirmID, tool.AccountID, 0, "SUR").Result;
+                this.SecurityCode, 0).Result.totalNet); // проверить работу этого кода в боевом КВИКЕ
         }
         else
         {
-            var List = _quik.Trading.GetDepoLimits().Result;
-            foreach (var t in List)
+            if (ClassCode == "TQBR") // боевой терминал
             {
-                if (t.SecCode == SecurityCode && t.LimitKindInt == 1)
+                var List = _quik.Trading.GetDepoLimits().Result;
+                foreach (var t in List)
                 {
-                    Positions = t.CurrentBalance / this.Lot;
+                    if (t.LimitKindInt == 1)
+                    {
+                        Positions = t.CurrentBalance / this.Lot;
+                    }
                 }
             }
-
-            //Positions = Convert.ToDecimal(_quik.Trading.GetDepo(СlientCode, this.FirmID, // <<== ЭТОТ код на боевом КВИКЕ НЕ РАБОТАЕТ
-            //this.SecurityCode, this.AccountID).Result.DepoCurrentBalance / this.Lot);          
-              
+            else // учебный терминал
+            {
+                Positions = Convert.ToDecimal(_quik.Trading.GetDepo(СlientCode, this.FirmID, // <<== ЭТОТ код на боевом КВИКЕ НЕ РАБОТАЕТ
+                this.SecurityCode, this.AccountID).Result.DepoCurrentBalance / this.Lot);
+            } 
             //Positions = Convert.ToDecimal(_quik.Trading.GetDepoEx(FirmID, СlientCode, SecurityCode,   // <<== ЭТОТ код на боевом КВИКЕ НЕ РАБОТАЕТ
             //    AccountID, 3).Result.CurrentBalance / this.Lot); 
         }
@@ -201,18 +204,18 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
         }
     }
     /// <summary>
-    ///     Расчет отступа размером в Cels от указанной цены
+    ///     Расчет отступа размером в _otstup от указанной цены
     /// </summary>
-    decimal CelOtstup(decimal price)
+    decimal CalclOtstup(decimal price, decimal _otstup)
     {
-        var otstup = price * this.StepLevel;
+        var otstup = price * _otstup;
         otstup = ((otstup % this.Step) != 0) ? otstup - (otstup % this.Step) : otstup;
         return otstup;
     }
     private void Events_OnParam(Param par)
     {
         decimal otstup;
-        if (par.SecCode == SecurityCode)GetLastPrice();
+        if (par.SecCode == SecurityCode) GetLastPrice();
          
         //if (!Isactiv && ListStopOrder.Count > 0 && par.SecCode == SecurityCode)
         //{
@@ -225,7 +228,7 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
         {
             if (this.ListStopOrder.Count == 1)
                 StopPrice = this.ListStopOrder[0].ConditionPrice -
-                            CelOtstup(this.ListStopOrder[0].ConditionPrice); // обозначает передел убытка = this.Cels + стопцена последнего в ListStopOrder ордера
+                            CalclOtstup(this.ListStopOrder[0].ConditionPrice, this.StepLevel); // обозначает передел убытка = this.Cels + стопцена последнего в ListStopOrder ордера
 
             if (this.ListStopOrder.Count == 0 && StopPrice == 0 ||
                 this.ListStopOrder.Count == 0 && StopPrice < this.LastPrice) //тут нужны еще условия ограничения
@@ -234,13 +237,10 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
                 Log("СРАБОТАЛ SetUpNetwork " + this.SecurityCode);
             }
             //добавление СтопОрдеров
-            if (this.ListStopOrder.Count < Levels && LastPrice > ListStopOrder[0].ConditionPrice
-                + CelOtstup(ListStopOrder[0].ConditionPrice) + Step * 5)
+            if (this.ListStopOrder.Count < Levels && LastPrice >= ListStopOrder[0].ConditionPrice
+                + CalclOtstup(ListStopOrder[0].ConditionPrice, this.Cels) + Step * 2)
             {
-                //var otstup = this.ListStopOrder[0].ConditionPrice * this.StepLevel;
-                //otstup = ((otstup % this.Step) != 0) ? otstup - (otstup % this.Step) : otstup;
-                otstup = ClassCode == "SPBFUT" ? StepLevel : CelOtstup(this.ListStopOrder[0].ConditionPrice); 
-                //var op = this.operation == Operation.Buy ? operation = Operation.Sell : operation = Operation.Buy;
+                otstup = ClassCode == "SPBFUT" ? StepLevel : CalclOtstup(this.ListStopOrder[0].ConditionPrice, this.StepLevel); 
                 this.ListStopOrder.Add(CreateStopOrder(this.ListStopOrder[0].ConditionPrice + otstup, Operation.Buy).Result);
                 this.ListStopOrder.Move(this.ListStopOrder.Count-1,0);
                 Log("ДОБАВЛЕН СТОП ОРДЕР НА ПОКУПКУ по цене:" + (this.ListStopOrder[0].ConditionPrice + otstup).ToString()+" " + this.SecurityCode);
@@ -249,7 +249,7 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
             if (this.lastPrice < StopPrice)
             { 
                 this.KillAllOrders();
-                this.Closeallpositions();
+                //this.Closeallpositions();
                 this.Isactiv = false;
                 Log("СРАБОТАЛ StopPrice");
             }

@@ -35,7 +35,7 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
     private bool _isactiv = false;
     private int _Levels = 5;
     private int _Quantity = 5;
-    private decimal StopPrice = 0;
+    private decimal StopLoss = 0;
     private bool StopPriceFlag = true;
     private ObservableCollection<StopOrder> _ListStopOrder = []; // способ инициализации предложен Визуал Студией
     private Operation _operation = Operation.Buy; 
@@ -105,7 +105,7 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
                 }
                 else
                 {
-                    MessageBox.Show("НЕТ ТАКОГО ИНСТРУМЕНТА"); return;
+                    MessageBox.Show("НЕТ ТАКОГО ИНСТРУМЕНТА " + SecurityCode); return;
                     Console.WriteLine("Tool.GetBaseParam. Ошибка: classCode не определен.");
                     Lot = 0;
                     GuaranteeProviding = 0; 
@@ -154,33 +154,40 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
     } 
     private void GetDepoLimit()
     {
-        if (ClassCode == "SPBFUT")
-        {
-            Positions = Convert.ToDecimal(_quik.Trading.GetFuturesHolding(FirmID, AccountID,
-                this.SecurityCode, 0).Result.totalNet); // проверить работу этого кода в боевом КВИКЕ
-        }
-        else
-        {
-            if (ClassCode == "TQBR") // боевой терминал
-            {
-                var List = _quik.Trading.GetDepoLimits().Result;
-                foreach (var t in List)
-                {
-                    if (t.LimitKindInt == 1)
-                    {
-                        Positions = t.CurrentBalance / this.Lot;
-                    }
-                }
-            }
-            else // учебный терминал
-            {
-                Positions = Convert.ToDecimal(_quik.Trading.GetDepo(СlientCode, this.FirmID, // <<== ЭТОТ код на боевом КВИКЕ НЕ РАБОТАЕТ
-                this.SecurityCode, this.AccountID).Result.DepoCurrentBalance / this.Lot);
-            } 
-            //Positions = Convert.ToDecimal(_quik.Trading.GetDepoEx(FirmID, СlientCode, SecurityCode,   // <<== ЭТОТ код на боевом КВИКЕ НЕ РАБОТАЕТ
-            //    AccountID, 3).Result.CurrentBalance / this.Lot); 
-        }
+        //if (ClassCode == "SPBFUT")
+        //{
+        //    Positions = Convert.ToDecimal(_quik.Trading.GetFuturesHolding(FirmID, AccountID,
+        //        this.SecurityCode, 0).Result.totalNet); // проверить работу этого кода в боевом КВИКЕ
+        //}
+        //else
+        //{}
 
+        //Positions = Convert.ToDecimal(_quik.Trading.GetDepo(СlientCode, this.FirmID, // <<== ЭТОТ код показывает только Т0
+        //        this.SecurityCode, this.AccountID).Result.DepoCurrentBalance / this.Lot);
+
+        if (ClassCode == "QJSIM")
+        {
+            Positions = Convert.ToDecimal(_quik.Trading.GetDepo(СlientCode, this.FirmID, // <<== ЭТОТ код только Т0
+                   this.SecurityCode, this.AccountID).Result.DepoCurrentBalance / this.Lot);
+        }
+        
+
+        if (ClassCode == "TQBR")
+        {
+            try
+            {
+                var T = _quik.Trading.GetDepoEx(FirmID, СlientCode,
+                    SecurityCode, // <<== ЭТОТ код на боевом КВИКЕ РАБОТАЕТ и показывает Т1
+                    AccountID, 1).Result;
+
+                Positions = T != null ? Positions = Convert.ToDecimal(T.CurrentBalance / this.Lot) : Positions = 0;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
+        } 
     }
 
     private void GetLastPrice()
@@ -221,23 +228,24 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
         //{
         //    KillAllOrders();
         //    ListStopOrder.Clear();
-        //    StopPrice = 0;
+        //    StopLoss = 0;
         //    Log("СРАБОТАЛА ДЕАКТИВАЦИЯ " + this.SecurityCode);
         //}
         if (Isactiv && par.SecCode == SecurityCode)
         {
             if (this.ListStopOrder.Count == 1)
-                StopPrice = this.ListStopOrder[0].ConditionPrice -
-                            CalclOtstup(this.ListStopOrder[0].ConditionPrice, this.StepLevel); // обозначает передел убытка = this.Cels + стопцена последнего в ListStopOrder ордера
+                StopLoss = this.ListStopOrder[0].ConditionPrice -
+                            CalclOtstup(this.ListStopOrder[0].ConditionPrice, this.StepLevel); // обозначает передел убытка
 
-            if (this.ListStopOrder.Count == 0 && StopPrice == 0 ||
-                this.ListStopOrder.Count == 0 && StopPrice < this.LastPrice) //тут нужны еще условия ограничения
+            if (this.ListStopOrder.Count == 0 && StopLoss == 0 ||
+                this.ListStopOrder.Count == 0 &&
+                StopLoss < CalclOtstup(StopLoss, this.StepLevel) * this.StepLevel + StopLoss) 
             {
                 SetUpNetwork();
                 Log("СРАБОТАЛ SetUpNetwork " + this.SecurityCode);
             }
             //добавление СтопОрдеров
-            if (this.ListStopOrder.Count < Levels && LastPrice >= ListStopOrder[0].ConditionPrice
+            if (this.ListStopOrder.Count < Levels && LastPrice > ListStopOrder[0].ConditionPrice
                 + CalclOtstup(ListStopOrder[0].ConditionPrice, this.Cels) + Step * 2)
             {
                 otstup = ClassCode == "SPBFUT" ? StepLevel : CalclOtstup(this.ListStopOrder[0].ConditionPrice, this.StepLevel); 
@@ -245,13 +253,13 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
                 this.ListStopOrder.Move(this.ListStopOrder.Count-1,0);
                 Log("ДОБАВЛЕН СТОП ОРДЕР НА ПОКУПКУ по цене:" + (this.ListStopOrder[0].ConditionPrice + otstup).ToString()+" " + this.SecurityCode);
             }
-            // СТОП УБЫТКА = StopPrice
-            if (this.lastPrice < StopPrice)
+            // СТОП УБЫТКА = StopLoss
+            if (this.lastPrice < StopLoss)
             { 
                 this.KillAllOrders();
                 //this.Closeallpositions();
                 this.Isactiv = false;
-                Log("СРАБОТАЛ StopPrice");
+                Log("СРАБОТАЛ StopLoss");
             }
 
         }  
@@ -276,11 +284,11 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
     }
 
     private void Events_OnStopOrder(StopOrder stopOrder)
-    {
+    { 
         if (stopOrder.SecCode == SecurityCode)
-        { 
+        {
             Console.WriteLine("Стоп-Ордер № - " + stopOrder.OrderNum + ", TransID - " + stopOrder.TransId + ",  SecCode - " + stopOrder.SecCode + " - " + stopOrder.Operation + ", State - " + stopOrder.State + ", Comment - " + stopOrder.Comment);
-             
+
         }
     }
 
@@ -305,9 +313,8 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
                         cel = ((cel % this.Step) != 0) ? cel - (cel % this.Step) : cel;
                     } 
                     //Operation op = spOrder.Operation == Operation.Buy? op = Operation.Sell : op = Operation.Buy;
-                    CreateStopOrder(spOrder.ConditionPrice + cel, Operation.Sell);
-                    Log("ВЫСТАВЛЕН ОРДЕР НА ПРОДАЖУ по цене: "+ 
-                        spOrder.ConditionPrice + cel+" "+ SecurityCode);
+                    CreateStopOrder(order.Price + cel, Operation.Sell);
+                    Log("ВЫСТАВЛЕН ОРДЕР НА ПРОДАЖУ по цене: "+ order.Price + cel+" "+ SecurityCode);
                 }
             } 
             //Console.WriteLine("Оrder № - " + order.OrderNum + ", TransID - " + order.TransID + ",  SecCode - " + order.SecCode + " - " + order.Operation + ", State - " + order.State);
@@ -369,9 +376,9 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
                 Account = this.AccountID,
                 ClassCode = this.ClassCode,
                 SecCode = this.SecurityCode,
-                Offset = 0,
+                Offset = Convert.ToDecimal(((this.Step*3).ToString()).TrimEnd('0')),//Convert.ToDecimal(this.Step.ToString("N", CultureInfo.GetCultureInfo("ru-RU"))), писец пилорама, зато работает!
                 OffsetUnit = OffsetUnits.PRICE_UNITS,
-                Spread = 0,
+                Spread = Convert.ToDecimal(((this.Step).ToString()).TrimEnd('0')),//Convert.ToDecimal(this.Step.ToString("N", CultureInfo.GetCultureInfo("ru-RU"))),
                 SpreadUnit = OffsetUnits.PRICE_UNITS,
                 StopOrderType = StopOrderType.TakeProfit,
                 Condition = BuySel == Operation.Buy ? Condition.LessOrEqual : Condition.MoreOrEqual,
@@ -455,7 +462,7 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
     /// <summary>
     ///     Краткое наименование инструмента (бумаги)
     /// </summary>
-    public string Name { get; private set; }
+    public string Name { get; set; }
 
     /// <summary>
     ///     Цена последней сделки
@@ -540,7 +547,7 @@ public class Tool : ViewModelBase //: MainWindow // <--наследование 
     /// <summary>
     ///     Код инструмента (бумаги)
     /// </summary>
-    public string SecurityCode { get; private set; }
+    public string SecurityCode { get; set; }
 
     /// <summary>
     ///     Код класса инструмента (бумаги)

@@ -113,7 +113,7 @@ namespace QUIKSharpTEST2
                 }
             }*/
 
-            _quik.StopService();
+            //_quik.StopService();
             // var Lst = new List<string>();
             // foreach (var item in toolList)
             // {
@@ -142,6 +142,7 @@ namespace QUIKSharpTEST2
         {
             
             MV.ListTools.Add(AddTool(txBoxAddTool.Text));
+            txBoxAddTool.Text = "";
         }
 
         private Quik СreateQuik()

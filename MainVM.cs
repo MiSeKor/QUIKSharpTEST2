@@ -32,16 +32,15 @@ namespace QUIKSharpTEST2
         }
         #endregion
 
-        public void StopEndClosed()
+        public void KillAllOrders()
         {
-            _SelectedTool.KillAllOrders();
-            //_SelectedTool.Closeallpositions();
+            _SelectedTool.KillAllOrders(); 
         }
-        //public enum Operation // Ваш Enum
-        //{
-        //    Buy,
-        //    Sell
-        //}
+        public void ClosPositions()
+        { 
+            _SelectedTool.Closeallpositions();
+        }
+
         public class EnumToArrayConverter : IValueConverter
         {
             public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
@@ -55,4 +54,5 @@ namespace QUIKSharpTEST2
             }
         }
     }
+
 }

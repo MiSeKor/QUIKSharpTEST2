@@ -127,10 +127,14 @@ namespace QUIKSharpTEST2
             //СlassSaveLoadFiles.SaveData(toolList); 
         }
 
-        private void ClosAll(object sender, RoutedEventArgs e)
+        private void KillAllOrders(object sender, RoutedEventArgs e)
         {
-            MV.StopEndClosed();
-        } 
+            MV.KillAllOrders();
+        }
+        private void ClosPositions(object sender, RoutedEventArgs e)
+        {
+            MV.ClosPositions();
+        }
 
         void Demonsracia(object sender, RoutedEventArgs e)
         { 

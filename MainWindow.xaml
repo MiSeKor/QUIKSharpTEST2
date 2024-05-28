@@ -6,22 +6,30 @@
         xmlns:quikSharpTest2="clr-namespace:QUIKSharpTEST2"
         xmlns:system="clr-namespace:System;assembly=mscorlib"
         xmlns:local="clr-namespace:QuikSharp.DataStructures;assembly=QUIKSharp"
-        d:DataContext="{d:DesignInstance Type=quikSharpTest2:MainVM}"
+        d:DataContext="{d:DesignInstance Type=quikSharpTest2:MainVM}" 
         mc:Ignorable="d"
-        Title="TestQuik# v2" Height="325" Width="740" Loaded="MainWind_Loaded" Closed="MainWind_Closed">
+        Title="TestQuik# v2" Height="325" Width="795" Loaded="MainWind_Loaded" Closed="MainWind_Closed">
     <Window.Resources>
         <quikSharpTest2:EnumToArrayConverter x:Key="EnumToArrayConverter"/>
         <!--Create list of enumeration values-->
         <!--https://learn.microsoft.com/en-us/dotnet/api/system.windows.controls.datagridcomboboxcolumn?view=windowsdesktop-8.0-->
-        <ObjectDataProvider x:Key="myOperation" MethodName="GetValues" ObjectType="{x:Type system:Enum}">
+        <ObjectDataProvider x:Key="MyEnumOperation" MethodName="GetValues" ObjectType="{x:Type system:Enum}">
             <ObjectDataProvider.MethodParameters>
                 <x:Type Type="local:Operation"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+        <ObjectDataProvider x:Key="MyEnumStrategy" MethodName="GetValues" ObjectType="{x:Type system:Enum}">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type Type="quikSharpTest2:Strategy"/>
             </ObjectDataProvider.MethodParameters>
         </ObjectDataProvider>
     </Window.Resources>
     <Grid Margin="10">
         <StackPanel Orientation="Vertical"> 
-            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,5">
+
+            <StackPanel Grid.Row="0" Orientation="Horizontal">
+                <Button FontSize="14" FontWeight="Bold" HorizontalAlignment="Left" Content="AddTool" Height="24" Width="72" Click="Button_Click_AddTool" RenderTransformOrigin="0.292,1.877"/>
+                <TextBox Name="txBoxAddTool" Margin="5,0,15,0" FontSize="14" FontWeight="Bold" Width="120"></TextBox>
                 <TextBlock FontSize="14" FontWeight="Bold">
                     <Run>Выбрано:</Run> 
                     <Run Text="{Binding SelectedTool.Name}"></Run> 
@@ -31,27 +39,26 @@
                     <Run Text="{Binding SelectedTool.operation}"></Run>
                 </TextBlock>
             </StackPanel>
-            <StackPanel Grid.Row="0" Orientation="Horizontal">
-                <Button FontSize="14" FontWeight="Bold" HorizontalAlignment="Left" Content="AddTool" Height="24" Width="72" Click="Button_Click_AddTool" RenderTransformOrigin="0.292,1.877"/>
-                <TextBox Name="txBoxAddTool" Margin="5,0,50,0" FontSize="14" FontWeight="Bold" Width="120"></TextBox>
-                <!--<TextBlock FontSize="14" FontWeight="Bold" Grid.Row="0" HorizontalAlignment="Left" TextAlignment="Right" Width="100"
-                           Text="{Binding SelectedTool.Name}"/>
-                <TextBlock Margin="10,0,0,0"  FontSize="14" FontWeight="Bold" Grid.Row="0" HorizontalAlignment="Left" Width="25"
-                           Text="{Binding SelectedTool.operation}"/>
-                <TextBlock Margin="10,0,0,0" FontSize="14" FontWeight="Bold" Grid.Row="0" HorizontalAlignment="Left" Width="50"
-                           Text="{Binding SelectedTool.SecurityCode}"/>-->
-            </StackPanel>
+
             <StackPanel Grid.Row="1" Margin="0,5,0,0">
-                <DataGrid Name="DataGrid1"  ItemsSource="{Binding ListTools}" AutoGenerateColumns="False" 
-                            SelectedItem="{Binding SelectedTool}" Margin="0,10,0,10" Grid.Row="1">
+                <DataGrid Name="DataGrid1" ItemsSource="{Binding ListTools}" AutoGenerateColumns="False" 
+                                                SelectedItem="{Binding SelectedTool}" 
+                                                Margin="0,10,0,10" Grid.Row="1">
                     <DataGrid.Columns>
 
                         <DataGridComboBoxColumn Header="Operation" SelectedItemBinding="{Binding operation,
                                                 UpdateSourceTrigger=PropertyChanged}"
                                                 ItemsSource="{Binding 
-                                                Source={StaticResource myOperation}}"/>
- 
-                        <DataGridCheckBoxColumn Header="Isactiv" Width="60" Binding="{Binding Isactiv, 
+                                                Source={StaticResource MyEnumOperation}}"
+                                                Width="65" />
+
+                        <DataGridComboBoxColumn Header="Strategy" SelectedItemBinding="{Binding Strategys,
+                                                UpdateSourceTrigger=PropertyChanged}"
+                                                ItemsSource="{Binding 
+                                                Source={StaticResource MyEnumStrategy}}"
+                                                Width="60" />
+
+                        <DataGridCheckBoxColumn Header="Isactiv" Width="45" Binding="{Binding Isactiv, 
                                                 UpdateSourceTrigger=PropertyChanged}" IsReadOnly="False"/>
                         <DataGridTextColumn Header="Tool" IsReadOnly="True" Width="60" Binding="{Binding SecurityCode}"/>
                         <DataGridTextColumn Header="LastPrise" IsReadOnly="True" Width="60" Binding="{Binding LastPrice}"/>
@@ -62,17 +69,25 @@
                         <DataGridTextColumn Header="Quantity" Width="60" Binding="{Binding Quantity}"/>
                         <DataGridTextColumn Header="StpOrdBuy" IsReadOnly="True" Width="70" 
                                                 Binding="{Binding ListStopOrder.Count, 
-                                                UpdateSourceTrigger=PropertyChanged}"/> <!--<==  эту строку надо затестить-->
+                                                UpdateSourceTrigger=PropertyChanged}"/> 
 
                         <DataGridTemplateColumn Header="ClosOrd" Width="60">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <Button Click="ClosAll" Content="OrdBuy"/>
+                                    <Button Click="KillAllOrders" Content="ClosOrd"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
 
-                        <DataGridTemplateColumn Width="65" Header="Operation">
+                        <DataGridTemplateColumn Header="ClosPosit" Width="60">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Button Click="ClosPositions" Content="ClosPosit"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <!--<DataGridTemplateColumn Width="65" Header="Operation">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <ComboBox ItemsSource="{Binding Source={x:Type local:Operation}, 
@@ -88,7 +103,7 @@
                                     </ComboBox>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
+                        </DataGridTemplateColumn>-->
 
                     </DataGrid.Columns>
                 </DataGrid>

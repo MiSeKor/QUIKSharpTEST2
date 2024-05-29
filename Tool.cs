@@ -40,7 +40,7 @@ namespace QUIKSharpTEST2
         private int _Quantity = 5;
         private decimal StopLoss = 0;
         private bool StopPriceFlag = true;
-        private ObservableCollection<StopOrder> _ListStopOrder = []; // способ инициализации предложен Визуал Студией
+        //private ObservableCollection<StopOrder> _ListStopOrder = []; // способ инициализации предложен Визуал Студией
         private Operation _operation = Operation.Buy;
         private Strategy _strategys = Strategy.Default;
         //MainWindow wnd = new MainWindow();
@@ -160,8 +160,12 @@ namespace QUIKSharpTEST2
         {
             if (ClassCode == "SPBFUT")
             {
+                //var T = _quik.Trading.GetFuturesHolding(FirmID, AccountID,
+                //    this.SecurityCode, 0).Result;// проверить работу этого кода в боевом КВИКЕ
+                //Positions = T != null ? Positions = Convert.ToDecimal(T.totalNet / this.Lot) : Positions = 0;
+
                 Positions = Convert.ToDecimal(_quik.Trading.GetFuturesHolding(FirmID, AccountID,
-                    this.SecurityCode, 0).Result.totalNet); // проверить работу этого кода в боевом КВИКЕ
+                    this.SecurityCode, 1).Result?.totalNet); // проверка оператора "?"
             } 
 
             //Positions = Convert.ToDecimal(_quik.Trading.GetDepo(СlientCode, this.FirmID, // <<== ЭТОТ код показывает только Т0
@@ -170,7 +174,7 @@ namespace QUIKSharpTEST2
             if (ClassCode == "QJSIM")
             {
                 Positions = Convert.ToDecimal(_quik.Trading.GetDepo(СlientCode, this.FirmID, // <<== ЭТОТ код только Т0
-                       this.SecurityCode, this.AccountID).Result.DepoCurrentBalance / this.Lot);
+                       this.SecurityCode, this.AccountID).Result?.DepoCurrentBalance / this.Lot);
             }
             
 
@@ -178,11 +182,15 @@ namespace QUIKSharpTEST2
             {
                 try
                 {
-                    var T = _quik.Trading.GetDepoEx(FirmID, СlientCode,
+                    Positions = Convert.ToDecimal(_quik.Trading.GetDepoEx(FirmID, СlientCode,
                         SecurityCode, // <<== ЭТОТ код на боевом КВИКЕ РАБОТАЕТ и показывает Т1
-                        AccountID, 1).Result;
+                        AccountID, 1).Result?.CurrentBalance / this.Lot);// проверка оператора "?"
 
-                    Positions = T != null ? Positions = Convert.ToDecimal(T.CurrentBalance / this.Lot) : Positions = 0;
+                    //var T = _quik.Trading.GetDepoEx(FirmID, СlientCode,
+                    //    SecurityCode, // <<== ЭТОТ код на боевом КВИКЕ РАБОТАЕТ и показывает Т1
+                    //    AccountID, 1).Result;
+
+                    //Positions = T != null ? Positions = Convert.ToDecimal(T.CurrentBalance / this.Lot) : Positions = 0;
                 }
                 catch (Exception e)
                 {
@@ -254,8 +262,9 @@ namespace QUIKSharpTEST2
                     + CalclOtstup(ListStopOrder[0].ConditionPrice, this.Cels) + Step * 2)
                 {
                     otstup = ClassCode == "SPBFUT" ? StepLevel : CalclOtstup(this.ListStopOrder[0].ConditionPrice, this.StepLevel); 
-                    this.ListStopOrder.Add(CreateStopOrder(this.ListStopOrder[0].ConditionPrice + otstup, Operation.Buy).Result);
-                    this.ListStopOrder.Move(this.ListStopOrder.Count-1,0);
+                    //this.ListStopOrder.Add(CreateStopOrder(this.ListStopOrder[0].ConditionPrice + otstup, Operation.Buy).Result);
+                    //this.ListStopOrder.Move(this.ListStopOrder.Count-1,0);
+                    this.ListStopOrder.Insert(0, CreateStopOrder(this.ListStopOrder[0].ConditionPrice + otstup, Operation.Buy).Result);
                     Log("ДОБАВЛЕН СТОП ОРДЕР НА ПОКУПКУ по цене:" + (this.ListStopOrder[0].ConditionPrice + otstup).ToString()+" " + this.SecurityCode);
                 }
                 // СТОП УБЫТКА = StopLoss
@@ -290,8 +299,9 @@ namespace QUIKSharpTEST2
                     - CalclOtstup(ListStopOrder[0].ConditionPrice, this.Cels) - Step * 2)
                 {
                     otstup = ClassCode == "SPBFUT" ? StepLevel : CalclOtstup(this.ListStopOrder[0].ConditionPrice, this.StepLevel);
-                    this.ListStopOrder.Add(CreateStopOrder(this.ListStopOrder[0].ConditionPrice + otstup, Operation.Sell).Result);
-                    this.ListStopOrder.Move(this.ListStopOrder.Count - 1, 0);
+                    //this.ListStopOrder.Add(CreateStopOrder(this.ListStopOrder[0].ConditionPrice + otstup, Operation.Sell).Result);
+                    //this.ListStopOrder.Move(this.ListStopOrder.Count - 1, 0);
+                    this.ListStopOrder.Insert(0, CreateStopOrder(this.ListStopOrder[0].ConditionPrice + otstup, Operation.Buy).Result);
                     Log("ДОБАВЛЕН СТОП ОРДЕР НА ПОКУПКУ по цене:" + (this.ListStopOrder[0].ConditionPrice + otstup).ToString() + " " + this.SecurityCode);
                 }
                 // СТОП УБЫТКА = StopLoss
@@ -399,14 +409,7 @@ namespace QUIKSharpTEST2
      
                 }
 
-                if (operation == Operation.Buy)
-                {
-                    pr -= otstup;   // тоже самое что и: pr = pr - otstup;  
-                }
-                else
-                {
-                    pr += otstup;
-                }
+                pr = this.operation == Operation.Buy ? pr -= otstup : pr += otstup;
             }
 
             return ListStopOrder;
@@ -419,9 +422,9 @@ namespace QUIKSharpTEST2
                     Account = this.AccountID,
                     ClassCode = this.ClassCode,
                     SecCode = this.SecurityCode,
-                    Offset = Convert.ToDecimal(((this.Step*3).ToString()).TrimEnd('0')),//Convert.ToDecimal(this.Step.ToString("N", CultureInfo.GetCultureInfo("ru-RU"))), писец пилорама, зато работает!
+                    Offset = Convert.ToDecimal(((this.Step*2).ToString()).TrimEnd('0')),//писец пилорама, зато работает!
                     OffsetUnit = OffsetUnits.PRICE_UNITS,
-                    Spread = Convert.ToDecimal(((this.Step).ToString()).TrimEnd('0')),//Convert.ToDecimal(this.Step.ToString("N", CultureInfo.GetCultureInfo("ru-RU"))),
+                    Spread = Convert.ToDecimal(((this.Step).ToString()).TrimEnd('0')),
                     SpreadUnit = OffsetUnits.PRICE_UNITS,
                     StopOrderType = StopOrderType.TakeProfit,
                     Condition = BuySel == Operation.Buy ? Condition.LessOrEqual : Condition.MoreOrEqual,
@@ -438,8 +441,7 @@ namespace QUIKSharpTEST2
                 return stopOrder; 
         }
         public async Task Closeallpositions()
-        {
-            int pos;
+        { 
             //await KillAllOrders().ConfigureAwait(true);
             //decimal KolLot;
 
@@ -465,7 +467,7 @@ namespace QUIKSharpTEST2
             //}
             //else
             //{}
-            pos = this.Positions > 0 ? pos = (int)this.Positions : pos = (int)-this.Positions;
+            int pos = this.Positions > 0 ? pos = (int)this.Positions : pos = (int)-this.Positions;
             Operation Oper = this.Positions > 0 ? Oper = Operation.Sell : Oper = Operation.Buy;
             await _quik.Orders.SendMarketOrder(this.ClassCode, this.SecurityCode, this.AccountID, Oper, pos).ConfigureAwait(false) ;
                 Console.WriteLine(SecurityCode + " Closeallpositions");  
@@ -595,11 +597,11 @@ namespace QUIKSharpTEST2
         /// <summary>
         ///     Лист Стоп-Ордеров
         /// </summary>
-        public ObservableCollection<StopOrder> ListStopOrder
-        {
-            get => _ListStopOrder;
-            set => SetField(ref _ListStopOrder, value);
-        }
+        public ObservableCollection<StopOrder> ListStopOrder { get; set; } = [];
+        //{
+        //    get => _ListStopOrder;
+        //    set => SetField(ref _ListStopOrder, value);
+        //}
 
         /// <summary>
         ///     Код инструмента (бумаги)

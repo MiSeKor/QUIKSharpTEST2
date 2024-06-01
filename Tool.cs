@@ -361,7 +361,10 @@ namespace QUIKSharpTEST2
                 //списку(у него даже нет имени переменной!), Поэтому ничто не может 
                 //изменить его внутри цикла.
                 foreach (var spOrder in this.ListStopOrder.ToList())
-                { 
+                {
+                    if (order.TransID == spOrder.TransId && order.State == State.Canceled)
+                        this.ListStopOrder.Remove(spOrder);
+
                     if (order.TransID == spOrder.TransId && order.State == State.Completed)
                     {
                         this.ListStopOrder.Remove(spOrder);
@@ -398,7 +401,8 @@ namespace QUIKSharpTEST2
 
             if (Strategys == Strategy.MoveNet && this.ListStopOrder.Count > 0)
             {
-                await KillOperationOrders().ConfigureAwait(false); 
+                await KillOperationOrders().ConfigureAwait(false);
+                Log("Чистка от сетки"+ this.operation+"-ордеров перед переносом сетки" + this.Name);
             }
 
             for (int n = 0; n < this.Levels; n++)

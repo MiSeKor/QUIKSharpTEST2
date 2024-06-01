@@ -68,13 +68,13 @@
                         <DataGridTextColumn Header="Cels" Width="35" Binding="{Binding Cels}"/>
                         <DataGridTextColumn Header="Quantity" Width="60" Binding="{Binding Quantity}"/>
                         <DataGridTextColumn Header="StpOrdBuy" IsReadOnly="True" Width="70" 
-                                                Binding="{Binding ListStopOrder.Count, 
+                                            Binding="{Binding ListStopOrder.Count, 
                                                 UpdateSourceTrigger=PropertyChanged}"/> 
 
                         <DataGridTemplateColumn Header="ClosOrd" Width="60">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <Button Click="KillAllOrders" Content="ClosOrd"/>
+                                    <Button Click="KillOperationOrders" Content="ClosOrd" ToolTip="Закроет все ордеры по направлению this.operation"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
@@ -82,7 +82,7 @@
                         <DataGridTemplateColumn Header="ClosPosit" Width="60">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <Button Click="ClosPositions" Content="ClosPosit"/>
+                                    <Button Click="ClosPositions" Content="ClosPosit" ToolTip="Закроет все, Ордеры Buy и Sell и this.Positions"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>

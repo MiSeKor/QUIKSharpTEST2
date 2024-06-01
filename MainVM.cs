@@ -32,13 +32,13 @@ namespace QUIKSharpTEST2
         }
         #endregion
 
-        public void KillAllOrders()
+        public void KillOperationOrders()
         {
-            _SelectedTool.KillAllOrders(); 
+            _SelectedTool.KillOperationOrders(); 
         }
         public void ClosPositions()
         { 
-            _SelectedTool.Closeallpositions();
+            _SelectedTool.CloseAllpositions();
         }
 
         public class EnumToArrayConverter : IValueConverter

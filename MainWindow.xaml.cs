@@ -127,9 +127,9 @@ namespace QUIKSharpTEST2
             //СlassSaveLoadFiles.SaveData(toolList); 
         }
 
-        private void KillAllOrders(object sender, RoutedEventArgs e)
+        private void KillOperationOrders(object sender, RoutedEventArgs e)
         {
-            MV.KillAllOrders();
+            MV.KillOperationOrders();
         }
         private void ClosPositions(object sender, RoutedEventArgs e)
         {

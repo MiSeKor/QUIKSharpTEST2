@@ -25,6 +25,7 @@
         </ObjectDataProvider>
     </Window.Resources>
     <Grid Margin="10">
+         
         <StackPanel Orientation="Vertical"> 
 
             <StackPanel Grid.Row="0" Orientation="Horizontal">
@@ -37,6 +38,8 @@
                     <Run Text="{Binding SelectedTool.SecurityCode}"></Run>
                     <Run xml:space="preserve">  Operation:</Run>
                     <Run Text="{Binding SelectedTool.operation}"></Run>
+                    <Run xml:space="preserve">  Strategys:</Run>
+                    <Run Text="{Binding SelectedTool.Strategys}"></Run>
                 </TextBlock>
             </StackPanel>
 

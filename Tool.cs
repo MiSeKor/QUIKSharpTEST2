@@ -40,8 +40,8 @@ namespace QUIKSharpTEST2
         private bool _isactiv = false;
         private int _Levels = 5;
         private int _Quantity = 5;
-        private decimal StopLoss = 0;
-        private bool StopPriceFlag = true;
+        private decimal StopLoss = decimal.Zero;
+        private bool StrategyFlag = false;
         private Operation _operation = Operation.Buy;
         private Strategy _strategys = Strategy.Default;
         //MainWindow wnd = new MainWindow();
@@ -233,13 +233,15 @@ namespace QUIKSharpTEST2
         private void Events_OnParam(Param par)
         {
             decimal otstup;
+            int StrategyMoveNetOtstup = 2;
             if (par.SecCode == SecurityCode) GetLastPrice();
 
             if (!Isactiv && par.SecCode == SecurityCode && ListStopOrder.Count > 0)
             {
                 KillOperationOrders();
                 ListStopOrder.Clear();
-                StopLoss = 0;
+                StrategyFlag = true;
+                StopLoss = decimal.Zero;
                 Log("ОТКЛЮЧЕНА АВТОМАТИКА " + this.SecurityCode);
             }
 
@@ -248,16 +250,21 @@ namespace QUIKSharpTEST2
                 operation == Operation.Buy)
             {
 
-                if (StopLoss == 0 && this.ListStopOrder.Count > 0)
-                        StopLoss = this.ListStopOrder[this.ListStopOrder.Count-1].ConditionPrice -
-                                   CalclOtstup(this.ListStopOrder[this.ListStopOrder.Count-1].ConditionPrice, this.StepLevel); // обозначает передел убытка
+                //if (this.ListStopOrder.Count == this.Levels)
+                //        StopLoss = this.ListStopOrder[this.Levels - 1].ConditionPrice -
+                //                   CalclOtstup(this.ListStopOrder[this.Levels - 1].ConditionPrice, this.StepLevel); // обозначает передел убытка
 
-                if (this.ListStopOrder.Count == 0 && StopLoss == 0
-                    || this.ListStopOrder.Count == 0 &&
-                        this.LastPrice > StopLoss + CalclOtstup(StopLoss, this.StepLevel) * this.Levels + StopLoss
+                if (/*this.ListStopOrder.Count == 0 && StopLoss == 0
+                    || this.Strategys == Strategy.Default &&*/
+                        // при первом пуске всегда ListStopOrder.Count == 0 и StopLoss = 0
+                        // значит это условие будет true для всех стратегий
+                        StopLoss == decimal.Zero ||
+                        this.ListStopOrder.Count == 0 &&
+                        this.LastPrice > StopLoss + CalclOtstup(StopLoss, this.StepLevel) * this.Levels
                     || this.Strategys == Strategy.MoveNet && 
-                        this.ListStopOrder.Count > 0 && this.LastPrice > this.ListStopOrder[this.ListStopOrder.Count - 1].ConditionPrice
-                            + CalclOtstup(this.ListStopOrder[this.ListStopOrder.Count - 1].ConditionPrice,this.Cels))
+                        this.ListStopOrder.Count > 0 && 
+                        this.LastPrice > this.ListStopOrder[0].ConditionPrice
+                            + CalclOtstup(this.ListStopOrder[0].ConditionPrice,this.StepLevel* StrategyMoveNetOtstup))
                 {
                     SetUpNetwork();
                     Log("СРАБОТАЛ SetUpNetwork " + this.SecurityCode);
@@ -273,7 +280,7 @@ namespace QUIKSharpTEST2
                     Log("ДОБАВЛЕН СТОП ОРДЕР НА " + this.operation + " по цене:" + (this.ListStopOrder[0].ConditionPrice)+ " " + this.SecurityCode);
                 }
                 // СТОП УБЫТКА = StopLoss
-                if (this.lastPrice < StopLoss && this.ListStopOrder.Count == 0)
+                if (this.lastPrice < StopLoss && this.ListStopOrder.Count == 0 && StopLoss != decimal.Zero)
                 { 
                     this.KillOperationOrders();
                     //this.CloseAllpositions();
@@ -286,14 +293,20 @@ namespace QUIKSharpTEST2
             if (Isactiv &&
                 par.SecCode == SecurityCode &&
                 operation == Operation.Sell)
-            {
-                if (StopLoss == 0 && this.ListStopOrder.Count > 0)
-                        StopLoss = this.ListStopOrder[this.ListStopOrder.Count-1].ConditionPrice +
-                                   CalclOtstup(this.ListStopOrder[this.ListStopOrder.Count-1].ConditionPrice, this.StepLevel); // обозначает передел убытка
+            { 
+                //if (this.ListStopOrder.Count == this.Levels)
+                //    StopLoss = this.ListStopOrder[this.Levels - 1].ConditionPrice +
+                //               CalclOtstup(this.ListStopOrder[this.Levels - 1].ConditionPrice, this.StepLevel); // обозначает передел убытка
 
-                if (this.ListStopOrder.Count == 0 && StopLoss == 0 ||
-                    this.ListStopOrder.Count == 0 &&
-                    this.LastPrice < StopLoss - CalclOtstup(StopLoss, this.StepLevel) * this.Levels - StopLoss)
+                if (/*this.ListStopOrder.Count == 0 && StopLoss == 0
+                    || this.Strategys == Strategy.Default &&*/
+                        StopLoss == decimal.Zero ||
+                        this.ListStopOrder.Count == 0 &&
+                        this.LastPrice < StopLoss - CalclOtstup(StopLoss, this.StepLevel) * this.Levels
+                    || this.Strategys == Strategy.MoveNet &&
+                        this.ListStopOrder.Count > 0 &&
+                        this.LastPrice < this.ListStopOrder[0].ConditionPrice
+                            - CalclOtstup(this.ListStopOrder[0].ConditionPrice, this.StepLevel * StrategyMoveNetOtstup))
                 {
                     SetUpNetwork();
                     Log("СРАБОТАЛ SetUpNetwork " + this.SecurityCode);
@@ -305,13 +318,11 @@ namespace QUIKSharpTEST2
                     - CalclOtstup(ListStopOrder[0].ConditionPrice, this.Cels) - Step * 2)
                 {
                     otstup = ClassCode == "SPBFUT" ? StepLevel : CalclOtstup(this.ListStopOrder[0].ConditionPrice, this.StepLevel);
-                    //this.ListStopOrder.Add(CreateStopOrder(this.ListStopOrder[0].ConditionPrice + otstup, Operation.Sell).Result);
-                    //this.ListStopOrder.Move(this.ListStopOrder.Count - 1, 0);
                     this.ListStopOrder.Insert(0, CreateStopOrder(this.ListStopOrder[0].ConditionPrice + otstup, Operation.Buy).Result);
                     Log("ДОБАВЛЕН СТОП ОРДЕР НА "+ this.operation+ " по цене:" + (this.ListStopOrder[0].ConditionPrice) + " " + this.SecurityCode);
                 }
                 // СТОП УБЫТКА = StopLoss
-                if (this.lastPrice > StopLoss && this.ListStopOrder.Count == 0)
+                if (this.lastPrice > StopLoss && this.ListStopOrder.Count == 0 && StopLoss != decimal.Zero)
                 {
                     this.KillOperationOrders();
                     //this.CloseAllpositions();
@@ -344,7 +355,18 @@ namespace QUIKSharpTEST2
         { 
             if (stopOrder.SecCode == SecurityCode)
             {
-                Console.WriteLine("Стоп-Ордер № - " + stopOrder.OrderNum + ", TransID - " + stopOrder.TransId + ",  SecCode - " + stopOrder.SecCode + " - " + stopOrder.Operation + ", State - " + stopOrder.State + ", Comment - " + stopOrder.Comment);
+                Log("Стоп-Ордер № - " + stopOrder.OrderNum + ", TransID - " 
+                    + stopOrder.TransId + ",  SecCode - " + stopOrder.SecCode + " - " 
+                    + stopOrder.Operation + ", State - " + stopOrder.State + ", Comment - " + stopOrder.Comment);
+
+                foreach (var ord in this.ListStopOrder.ToList())// если закрыть вручную в квике надо синхронизировать
+                {
+                    if (ord.TransId == stopOrder.TransId && ord.State == State.Canceled)
+                    {
+                        this.ListStopOrder.Remove(ord);
+                        Log("Events_OnStopOrder УДАЛЕНИЕ TransID - " + stopOrder.TransId + ", SecCode - " + stopOrder.SecCode);
+                    }
+                }
             }
         }
 
@@ -361,10 +383,7 @@ namespace QUIKSharpTEST2
                 //списку(у него даже нет имени переменной!), Поэтому ничто не может 
                 //изменить его внутри цикла.
                 foreach (var spOrder in this.ListStopOrder.ToList())
-                {
-                    if (order.TransID == spOrder.TransId && order.State == State.Canceled)
-                        this.ListStopOrder.Remove(spOrder);
-
+                { 
                     if (order.TransID == spOrder.TransId && order.State == State.Completed)
                     {
                         this.ListStopOrder.Remove(spOrder);
@@ -373,7 +392,6 @@ namespace QUIKSharpTEST2
                         price = this.operation == Operation.Buy ? order.Price + cel : order.Price - cel;
                         CreateStopOrder(price, op);
                         Log("ВЫСТАВЛЕН ОРДЕР НА "+ op + " по цене: " + price + " " + SecurityCode);
-                        // break;
                     }
                 }
                  
@@ -401,10 +419,16 @@ namespace QUIKSharpTEST2
 
             if (Strategys == Strategy.MoveNet && this.ListStopOrder.Count > 0)
             {
+                //StrategyFlag = true;
+                pr = this.operation == Operation.Buy ?
+                    pr -= CalclOtstup(pr, this.StepLevel) :
+                    pr += CalclOtstup(pr, this.StepLevel);
                 await KillOperationOrders().ConfigureAwait(false);
-                Log("Чистка от сетки"+ this.operation+"-ордеров перед переносом сетки" + this.Name);
+                Log("Чистка от сетки "+ this.operation+"- ордеров перед переносом сетки " + this.Name);
             }
 
+            //foreach (var i in Enumerable.Range(0, this.Levels)){}
+             
             for (int n = 0; n < this.Levels; n++)
             {
                 //Application.Current.Dispatcher.Invoke(new Action(() => { wnd.Log(s);}));
@@ -426,12 +450,16 @@ namespace QUIKSharpTEST2
                         otstup = pr * this.StepLevel;
                         otstup = ((otstup % this.Step) != 0) ? otstup - (otstup % this.Step) : otstup;
                         flag = false;
-                    }
-     
+                    } 
                 }
 
                 pr = this.operation == Operation.Buy ? pr -= otstup : pr += otstup;
             }
+
+            var ToBuySel = CalclOtstup(ListStopOrder[ListStopOrder.Count - 1].ConditionPrice, this.StepLevel)+ this.Step;
+            this.StopLoss = this.operation == Operation.Buy ?
+                ListStopOrder[ListStopOrder.Count - 1].ConditionPrice - ToBuySel :
+                ListStopOrder[ListStopOrder.Count - 1].ConditionPrice + ToBuySel;
 
             return ListStopOrder;
         }
@@ -481,8 +509,8 @@ namespace QUIKSharpTEST2
         public async Task KillOperationOrders()
         {
             this.ListStopOrder.Clear();
-            if (Strategys == Strategy.Default) Isactiv = false;
-            StopLoss = 0;
+            if (this.Strategys == Strategy.Default) this.Isactiv = false;
+            //this.StopLoss = 0;
 
             var orders = await _quik.Orders.GetOrders(this.ClassCode, this.SecurityCode).ConfigureAwait(true);
             if (orders.Count != 0)
@@ -514,7 +542,8 @@ namespace QUIKSharpTEST2
         {
             this.ListStopOrder.Clear();
             this.Isactiv = false;
-            StopLoss = 0;
+            this.StrategyFlag = false;
+            this.StopLoss = 0;
 
             var orders = await _quik.Orders.GetOrders(this.ClassCode, this.SecurityCode).ConfigureAwait(true);
             if (orders.Count != 0)
@@ -690,7 +719,15 @@ namespace QUIKSharpTEST2
 
     public enum Strategy
     {
+        /// <summary>
+        /// Обычная стратегия, есть StopLoss, есть добавление сетки в исходное состояние
+        /// если LastPrice отодвинется на некоторое расстояние от цены ближайшего ордера
+        /// </summary>
         Default,
+        /// <summary>
+        /// Стратегия такая ка Default, но сетка движется за ценой если та уходит дальше
+        /// заданных пределов
+        /// </summary>
         MoveNet,
         num3
     }

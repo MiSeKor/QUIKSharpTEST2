@@ -70,7 +70,7 @@
                         <DataGridTextColumn Header="StepLevel" Width="60" Binding="{Binding StepLevel}"/>
                         <DataGridTextColumn Header="Cels" Width="35" Binding="{Binding Cels}"/>
                         <DataGridTextColumn Header="Quantity" Width="60" Binding="{Binding Quantity}"/>
-                        <DataGridTextColumn Header="StpOrdBuy" IsReadOnly="True" Width="70" 
+                        <DataGridTextColumn Header="StpOrd" IsReadOnly="True" Width="70" 
                                             Binding="{Binding ListStopOrder.Count, 
                                                 UpdateSourceTrigger=PropertyChanged}"/> 
 

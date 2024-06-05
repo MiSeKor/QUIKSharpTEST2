@@ -18,6 +18,7 @@ using System.Windows.Controls;
 using System.Runtime.ConstrainedExecution;
 using System.Threading;
 using Newtonsoft.Json.Linq;
+using System.Xml.Linq;
 
 
 namespace QUIKSharpTEST2
@@ -284,6 +285,7 @@ namespace QUIKSharpTEST2
                 { 
                     this.KillOperationOrders();
                     //this.CloseAllpositions();
+                    StopLoss = decimal.Zero;
                     this.Isactiv = false;
                     Log("СРАБОТАЛ StopLoss");
                 }
@@ -326,6 +328,7 @@ namespace QUIKSharpTEST2
                 {
                     this.KillOperationOrders();
                     //this.CloseAllpositions();
+                    StopLoss = decimal.Zero;
                     this.Isactiv = false;
                     Log("СРАБОТАЛ StopLoss");
                 }
@@ -348,6 +351,22 @@ namespace QUIKSharpTEST2
                 {
                     Console.WriteLine("ОШИБКА " + transReply.TransID + " - " + transReply.ResultMsg);
                 }
+
+                //var t =transReply.Comment;
+                //var tt = transReply.ErrorCode;
+                //var ttt = transReply.ResultMsg;
+                //var ttttt = transReply.Flags;
+                //var tttt = transReply.Flags;
+
+                //foreach (var stpOrder in ListStopOrder.ToList())
+                //{
+                //    if (transReply.TransID != stpOrder.TransId) continue;
+                //    //if (!transReply.TransID.ToString().Contains(stpOrder.Comment)) continue; 
+                //    if (transReply.Status <= 3) continue;
+                //    ListStopOrder.Remove(stpOrder);
+                //    Log(">>> transReply <<< СОВПАДЕНЕ УДАЛЕНЕ " +stpOrder.TransId+" "+
+                //        stpOrder.Comment + " " + stpOrder.SecCode);
+                //}
             }
         }
 
@@ -422,7 +441,12 @@ namespace QUIKSharpTEST2
                 //StrategyFlag = true;
                 pr = this.operation == Operation.Buy ?
                     pr -= CalclOtstup(pr, this.StepLevel) :
-                    pr += CalclOtstup(pr, this.StepLevel);
+                    pr += CalclOtstup(pr, this.StepLevel); 
+                if (GetActivOrdTask().Result)
+                {
+                    Log("ОТЛОВ НАЛИЧИЯ ЧАСТИЧНО ИСПОЛНЕНЫХ СТОП ОРДЕРОВ, если ловится нужно пропустить установку сетки");
+                }
+
                 await KillOperationOrders().ConfigureAwait(false);
                 Log("Чистка от сетки "+ this.operation+"- ордеров перед переносом сетки " + this.Name);
             }
@@ -482,7 +506,7 @@ namespace QUIKSharpTEST2
                     // Price = Math.Round(pr3, this.PriceAccuracy),  //не нужна для тей-профит
                     Operation = BuySel,
                     Quantity = this.Quantity,
-                    Comment = "qwerty",//BuySel == Operation.Buy ? (_Comment = "Buy") : (_Comment = "Sel"),// похоже коммент совсем бесполезный, нигде в ордерах его нет
+                    Comment = BuySel == Operation.Buy ? "Buy" : "Sel",
                 };
 
                 var t = await _quik.StopOrders.CreateStopOrder(stopOrder).ConfigureAwait(false);
@@ -536,6 +560,26 @@ namespace QUIKSharpTEST2
                 }
             } 
             Console.WriteLine(SecurityCode + " Kill Operation Orders"); 
+        }
+
+        /// <summary>
+        /// проверка наличия активных ордеров, стоп-ордеров,
+        /// бывает вылазит ошибка "невозможно снять ордер" и из за этого сетка не ставиться
+        /// </summary> 
+        public async Task<bool> GetActivOrdTask()
+        {
+            bool flag = true;
+
+            var Stoporders = await _quik.StopOrders.GetStopOrders(this.ClassCode, this.SecurityCode).ConfigureAwait(true);
+            foreach (var stoporder in Stoporders.ToList())
+            {
+                if (stoporder.State == State.Active && stoporder.FilledQuantity != 0)
+                {
+                    flag = false;
+                } 
+            }
+            
+            return flag;
         }
 
         public async Task KillAllOrders()
@@ -663,7 +707,7 @@ namespace QUIKSharpTEST2
         }
 
         /// <summary>
-        ///     Лист Стоп-Ордеров
+        ///     Лист Стоп-Ордеров по направлению "operation"
         /// </summary>
         public ObservableCollection<StopOrder> ListStopOrder { get; set; } = [];
 

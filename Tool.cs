@@ -261,11 +261,11 @@ namespace QUIKSharpTEST2
                         // значит это условие будет true для всех стратегий
                         StopLoss == decimal.Zero ||
                         this.ListStopOrder.Count == 0 &&
-                        this.LastPrice > StopLoss + CalclOtstup(StopLoss, this.StepLevel) * this.Levels
+                        this.LastPrice > StopLoss + CalclOtstup(StopLoss, this.StepLevel)// * this.Levels
                     || this.Strategys == Strategy.MoveNet && 
                         this.ListStopOrder.Count > 0 && 
                         this.LastPrice > this.ListStopOrder[0].ConditionPrice
-                            + CalclOtstup(this.ListStopOrder[0].ConditionPrice,this.StepLevel* StrategyMoveNetOtstup))
+                            + CalclOtstup(this.ListStopOrder[0].ConditionPrice,this.StepLevel * StrategyMoveNetOtstup))
                 {
                     SetUpNetwork();
                     Log("СРАБОТАЛ SetUpNetwork " + this.SecurityCode);
@@ -402,7 +402,7 @@ namespace QUIKSharpTEST2
                 //списку(у него даже нет имени переменной!), Поэтому ничто не может 
                 //изменить его внутри цикла.
                 foreach (var spOrder in this.ListStopOrder.ToList())
-                { 
+                {
                     if (order.TransID == spOrder.TransId && order.State == State.Completed)
                     {
                         this.ListStopOrder.Remove(spOrder);
@@ -411,6 +411,15 @@ namespace QUIKSharpTEST2
                         price = this.operation == Operation.Buy ? order.Price + cel : order.Price - cel;
                         CreateStopOrder(price, op);
                         Log("ВЫСТАВЛЕН ОРДЕР НА "+ op + " по цене: " + price + " " + SecurityCode);
+                    }
+                    else if(order.TransID != spOrder.TransId && order.Operation != operation && Isactiv)
+                    {
+                        //для опоздавших ордеров, на всякий слуай
+                        cel = ClassCode == "SPBFUT" ? cel = this.Cels : cel = CalclOtstup(spOrder.ConditionPrice, this.Cels);
+                        Operation op = this.operation == Operation.Buy ? op = Operation.Sell : op = Operation.Buy;
+                        price = this.operation == Operation.Buy ? order.Price + cel : order.Price - cel;
+                        CreateStopOrder(price, op);
+                        Log("ВЫСТАВЛЕН ОРДЕР >>> не из листа <<< , НА " + op + " по цене: " + price + " " + SecurityCode);
                     }
                 }
                  
@@ -442,10 +451,6 @@ namespace QUIKSharpTEST2
                 pr = this.operation == Operation.Buy ?
                     pr -= CalclOtstup(pr, this.StepLevel) :
                     pr += CalclOtstup(pr, this.StepLevel); 
-                if (GetActivOrdTask().Result)
-                {
-                    Log("ОТЛОВ НАЛИЧИЯ ЧАСТИЧНО ИСПОЛНЕНЫХ СТОП ОРДЕРОВ, если ловится нужно пропустить установку сетки");
-                }
 
                 await KillOperationOrders().ConfigureAwait(false);
                 Log("Чистка от сетки "+ this.operation+"- ордеров перед переносом сетки " + this.Name);
@@ -495,21 +500,21 @@ namespace QUIKSharpTEST2
                     Account = this.AccountID,
                     ClassCode = this.ClassCode,
                     SecCode = this.SecurityCode,
-                    Offset = Convert.ToDecimal(((this.Step*3).ToString()).TrimEnd('0')),//писец пилорама, зато работает!
+                    Offset = Convert.ToDecimal(((this.Step).ToString()).TrimEnd('0')),//писец пилорама, зато работает!
                     OffsetUnit = OffsetUnits.PRICE_UNITS,
                     Spread = Convert.ToDecimal(((this.Step).ToString()).TrimEnd('0')),
                     SpreadUnit = OffsetUnits.PRICE_UNITS,
                     StopOrderType = StopOrderType.TakeProfit,
                     Condition = BuySel == Operation.Buy ? Condition.LessOrEqual : Condition.MoreOrEqual,
                     ConditionPrice = Math.Round(pr, this.PriceAccuracy),
-                    // ConditionPrice2 = Math.Round(pr2, this.PriceAccuracy), //не нужна для тей-профит
-                    // Price = Math.Round(pr3, this.PriceAccuracy),  //не нужна для тей-профит
+                     ConditionPrice2 = 0, //не нужна для тей-профит
+                    Price = 0,  //не нужна для тей-профит
                     Operation = BuySel,
                     Quantity = this.Quantity,
                     Comment = BuySel == Operation.Buy ? "Buy" : "Sel",
                 };
 
-                var t = await _quik.StopOrders.CreateStopOrder(stopOrder).ConfigureAwait(false);
+                var t = _quik.StopOrders.CreateStopOrder(stopOrder).Result;
                 stopOrder.TransId = t;
                 return stopOrder; 
         }
@@ -532,34 +537,25 @@ namespace QUIKSharpTEST2
         /// </summary> 
         public async Task KillOperationOrders()
         {
-            this.ListStopOrder.Clear();
-            if (this.Strategys == Strategy.Default) this.Isactiv = false;
+            if (this.Strategys == Strategy.Default) this.Isactiv = false; 
+            this.ListStopOrder.Clear(); 
             //this.StopLoss = 0;
 
             var orders = await _quik.Orders.GetOrders(this.ClassCode, this.SecurityCode).ConfigureAwait(true);
-            if (orders.Count != 0)
+            foreach (var order in orders.Where(order => order.State == State.Active))
             {
-                foreach (var order in orders)
-                {
-                    if (order.State == State.Active)
-                    {
-                        await _quik.Orders.KillOrder(order).ConfigureAwait(true);
-                    }
-                }
-            }
+                await _quik.Orders.KillOrder(order).ConfigureAwait(false); 
+            } 
 
             var Stoporders = await _quik.StopOrders.GetStopOrders(this.ClassCode, this.SecurityCode).ConfigureAwait(true);
-            if (Stoporders.Count != 0)
-            {
-                foreach (var stoporder in Stoporders)
-                {
-                    if (stoporder.State == State.Active && stoporder.Operation == this.operation)
-                    {
-                        await _quik.StopOrders.KillStopOrder(stoporder).ConfigureAwait(true);
-                    }
-                }
+            foreach (var stoporder in Stoporders.Where(stoporder => 
+                         stoporder.State == State.Active 
+                         && stoporder.Operation == this.operation 
+                         && (stoporder.Flags & 0x8000) == 0)) // (0x8000)  Идет расчет минимума-максимума 
+            { 
+                await _quik.StopOrders.KillStopOrder(stoporder).ConfigureAwait(false); 
             } 
-            Console.WriteLine(SecurityCode + " Kill Operation Orders"); 
+            Log(SecurityCode + " Kill Operation Orders");
         }
 
         /// <summary>

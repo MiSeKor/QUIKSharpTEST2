@@ -769,7 +769,11 @@ namespace QUIKSharpTEST2
         /// заданных пределов
         /// </summary>
         MoveNet,
-        num3
+        /// <summary>
+        /// Стратегия пересечения средних Moving Average, медленной с периодом 20
+        /// и быстрой с периодом 5
+        /// </summary>
+        ClassicMA
     }
 }
 

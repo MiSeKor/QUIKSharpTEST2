@@ -19,6 +19,9 @@ using System.Runtime.ConstrainedExecution;
 using System.Threading;
 using Newtonsoft.Json.Linq;
 using System.Xml.Linq;
+using System.Timers;
+using System.Windows.Threading;
+using Timer = System.Threading.Timer;
 
 
 namespace QUIKSharpTEST2
@@ -45,6 +48,7 @@ namespace QUIKSharpTEST2
         private bool StrategyFlag = false;
         private Operation _operation = Operation.Buy;
         private Strategy _strategys = Strategy.Default;
+        private DispatcherTimer timer = new();
         //MainWindow wnd = new MainWindow();
         /// <summary>
         ///     Конструктор класса
@@ -130,12 +134,12 @@ namespace QUIKSharpTEST2
                 Console.WriteLine("Ошибка в методе GetBaseParam: " + e.Message) ; 
             }
 
-            quik.Candles.Subscribe(ClassCode, secCode, CandleInterval.M1).Wait();
-            if (quik.Candles.IsSubscribed(ClassCode, secCode, CandleInterval.M1).Result)
-            {
-                Debug.WriteLine("Подписались на 1 минуту " + secCode + " ...");
-                //quik.Candles.NewCandle += CandlesOnNewCandle;
-            }
+            //quik.Candles.Subscribe(ClassCode, secCode, CandleInterval.M1).Wait();
+            //if (quik.Candles.IsSubscribed(ClassCode, secCode, CandleInterval.M1).Result)
+            //{
+            //    Debug.WriteLine("Подписались на 1 минуту " + secCode + " ...");
+            //    quik.Candles.NewCandle += CandlesOnNewCandle;
+            //}
 
             Console.WriteLine("Подписываемся на стакан...");
             quik.OrderBook.Subscribe(ClassCode, SecurityCode).Wait();
@@ -155,8 +159,11 @@ namespace QUIKSharpTEST2
             _quik.Events.OnParam += Events_OnParam;
             _quik.Events.OnDepoLimit += Events_OnDepoLimit;
             _quik.Events.OnFuturesClientHolding +=EventsOnOnFuturesClientHolding;
+            timer.Tick += Timer_Tick;
+            timer.Interval = TimeSpan.FromMilliseconds(500);
+            timer.Start();
         }
-     
+ 
         private void Log(string s)
         {
             Console.WriteLine(s);
@@ -205,6 +212,14 @@ namespace QUIKSharpTEST2
             } 
         }
 
+        private void Timer_Tick(object sender, EventArgs e)
+        {
+            if (Strategys != Strategy.IntersMA)
+            {
+                Log("Strategys != Strategy.IntersMA");
+            }
+        }
+
         private void GetLastPrice()
         { 
             LastPrice = Convert.ToDecimal(_quik.Trading.GetParamEx(ClassCode, SecurityCode, "LAST").Result.ParamValue
@@ -224,7 +239,7 @@ namespace QUIKSharpTEST2
             {
                 GetDepoLimit();
             }
-        }
+        } 
         /// <summary>
         ///     Расчет отступа размером = _otstup в % от указаннго price
         /// </summary>
@@ -244,7 +259,7 @@ namespace QUIKSharpTEST2
             if (par.SecCode == SecurityCode)
             {
                 GetLastPrice();
-            }
+            } 
 
             if (Strategys != Strategy.IntersMA &&
                 _quik.Candles.IsSubscribed(ClassCode, SecurityCode, CandleInterval.M5).Result)
@@ -254,14 +269,19 @@ namespace QUIKSharpTEST2
                 _quik.Candles.Subscribe(ClassCode, SecurityCode, CandleInterval.M1).Wait();
                 Log("Подписались на 1 минут " + SecurityCode + " ...");
             }
-            else if(Strategys == Strategy.IntersMA && !_quik.Candles.IsSubscribed(ClassCode, SecurityCode, CandleInterval.M5).Result)
+            else if (Strategys == Strategy.IntersMA && 
+                     !_quik.Candles.IsSubscribed(ClassCode, SecurityCode, CandleInterval.M5).Result)
             {
                 _quik.Candles.Unsubscribe(ClassCode, SecurityCode, CandleInterval.M1).Wait();
                 Log("Отписка от 1 минуты " + SecurityCode + " ...");
                 _quik.Candles.Subscribe(ClassCode, SecurityCode, CandleInterval.M5).Wait();
                 Log("Подписались на 5 минут " + SecurityCode + " ...");
-                _quik.Candles.NewCandle += Events_StrategyIntersMA;
+                _quik.Candles.NewCandle += Events_NewCandle_StrategyIntersMA;
+            }
 
+            if (Strategys == Strategy.ToTrend)
+            {
+                _quik.Events.OnParam += Events_OnParam1_StrategyToTrend;
             }
 
             if (!Isactiv && par.SecCode == SecurityCode && ListStopOrder.Count > 0)
@@ -366,7 +386,12 @@ namespace QUIKSharpTEST2
             } 
         }
 
-        private void Events_StrategyIntersMA(Candle candle)
+        private void Events_OnParam1_StrategyToTrend(Param par)
+        {
+            Log("_quik.Events.OnParam += Events_OnParam1_StrategyToTrend;"); 
+        }
+
+        private void Events_NewCandle_StrategyIntersMA(Candle candle)
         {
             if (candle.SecCode == SecurityCode && Isactiv)
             {
@@ -740,6 +765,7 @@ namespace QUIKSharpTEST2
         }
         private void CandlesOnNewCandle(Candle candle)
         {
+            MessageBox.Show("проверка будет ли работать этот метод без включениЯ стратегии пересеченияМА");
         } 
 
         #region Свойства

@@ -111,10 +111,13 @@ namespace QUIKSharpTEST2
                     }
                     else
                     {
-                        MessageBox.Show("НЕТ ТАКОГО ИНСТРУМЕНТА " + SecurityCode); return;
+                        //MessageBox.Show("НЕТ ТАКОГО ИНСТРУМЕНТА " + SecurityCode); return;
+
                         Console.WriteLine("Tool.GetBaseParam. Ошибка: classCode не определен.");
                         Lot = 0;
-                        GuaranteeProviding = 0; 
+                        GuaranteeProviding = 0;
+                        this.LastPrice = -999999;
+                        return;
                     }
                 }
                 else
@@ -131,7 +134,7 @@ namespace QUIKSharpTEST2
             if (quik.Candles.IsSubscribed(ClassCode, secCode, CandleInterval.M1).Result)
             {
                 Debug.WriteLine("Подписались на 1 минуту " + secCode + " ...");
-                quik.Candles.NewCandle += CandlesOnNewCandle;
+                //quik.Candles.NewCandle += CandlesOnNewCandle;
             }
 
             Console.WriteLine("Подписываемся на стакан...");
@@ -231,11 +234,35 @@ namespace QUIKSharpTEST2
             otstup = ((otstup % this.Step) != 0) ? otstup - (otstup % this.Step) : otstup;
             return otstup;
         }
+
         private void Events_OnParam(Param par)
         {
             decimal otstup;
             int StrategyMoveNetOtstup = 2;
-            if (par.SecCode == SecurityCode) GetLastPrice();
+
+            #region контрольный регион
+            if (par.SecCode == SecurityCode)
+            {
+                GetLastPrice();
+            }
+
+            if (Strategys != Strategy.IntersMA &&
+                _quik.Candles.IsSubscribed(ClassCode, SecurityCode, CandleInterval.M5).Result)
+            {
+                _quik.Candles.Unsubscribe(ClassCode, SecurityCode, CandleInterval.M5).Wait();
+                Log("Отписка от 5 минуты " + SecurityCode + " ...");
+                _quik.Candles.Subscribe(ClassCode, SecurityCode, CandleInterval.M1).Wait();
+                Log("Подписались на 1 минут " + SecurityCode + " ...");
+            }
+            else if(Strategys == Strategy.IntersMA && !_quik.Candles.IsSubscribed(ClassCode, SecurityCode, CandleInterval.M5).Result)
+            {
+                _quik.Candles.Unsubscribe(ClassCode, SecurityCode, CandleInterval.M1).Wait();
+                Log("Отписка от 1 минуты " + SecurityCode + " ...");
+                _quik.Candles.Subscribe(ClassCode, SecurityCode, CandleInterval.M5).Wait();
+                Log("Подписались на 5 минут " + SecurityCode + " ...");
+                _quik.Candles.NewCandle += Events_StrategyIntersMA;
+
+            }
 
             if (!Isactiv && par.SecCode == SecurityCode && ListStopOrder.Count > 0)
             {
@@ -244,8 +271,9 @@ namespace QUIKSharpTEST2
                 StrategyFlag = true;
                 StopLoss = decimal.Zero;
                 Log("ОТКЛЮЧЕНА АВТОМАТИКА " + this.SecurityCode);
-            }
-
+            } 
+            #endregion
+            
             if (Isactiv && 
                 par.SecCode == SecurityCode && 
                 operation == Operation.Buy)
@@ -254,40 +282,42 @@ namespace QUIKSharpTEST2
                 //if (this.ListStopOrder.Count == this.Levels)
                 //        StopLoss = this.ListStopOrder[this.Levels - 1].ConditionPrice -
                 //                   CalclOtstup(this.ListStopOrder[this.Levels - 1].ConditionPrice, this.StepLevel); // обозначает передел убытка
-
-                if (/*this.ListStopOrder.Count == 0 && StopLoss == 0
+                if (Strategys != Strategy.IntersMA)
+                {
+                    if (/*this.ListStopOrder.Count == 0 && StopLoss == 0
                     || this.Strategys == Strategy.Default &&*/
-                        // при первом пуске всегда ListStopOrder.Count == 0 и StopLoss = 0
-                        // значит это условие будет true для всех стратегий
-                        StopLoss == decimal.Zero ||
-                        this.ListStopOrder.Count == 0 &&
-                        this.LastPrice > StopLoss + CalclOtstup(StopLoss, this.StepLevel)// * this.Levels
-                    || this.Strategys == Strategy.MoveNet && 
-                        this.ListStopOrder.Count > 0 && 
-                        this.LastPrice > this.ListStopOrder[0].ConditionPrice
-                            + CalclOtstup(this.ListStopOrder[0].ConditionPrice,this.StepLevel * StrategyMoveNetOtstup))
-                {
-                    SetUpNetwork();
-                    Log("СРАБОТАЛ SetUpNetwork " + this.SecurityCode);
-                }
-                //добавление СтопОрдеров
-                if (this.ListStopOrder.Count > 0 &&
-                    this.ListStopOrder.Count < this.Levels && this.LastPrice > this.ListStopOrder[0].ConditionPrice
-                    + CalclOtstup(this.ListStopOrder[0].ConditionPrice, this.StepLevel)
-                    + CalclOtstup(this.ListStopOrder[0].ConditionPrice, this.Cels) + Step * 2)
-                {
-                    otstup = ClassCode == "SPBFUT" ? StepLevel : CalclOtstup(this.ListStopOrder[0].ConditionPrice, this.StepLevel); 
-                    this.ListStopOrder.Insert(0, CreateStopOrder(this.ListStopOrder[0].ConditionPrice + otstup, Operation.Buy).Result);
-                    Log("ДОБАВЛЕН СТОП ОРДЕР НА " + this.operation + " по цене:" + (this.ListStopOrder[0].ConditionPrice)+ " " + this.SecurityCode);
-                }
-                // СТОП УБЫТКА = StopLoss
-                if (this.lastPrice < StopLoss && this.ListStopOrder.Count == 0 && StopLoss != decimal.Zero)
-                { 
-                    this.KillOperationOrders();
-                    //this.CloseAllpositions();
-                    StopLoss = decimal.Zero;
-                    this.Isactiv = false;
-                    Log("СРАБОТАЛ StopLoss");
+                            // при первом пуске всегда ListStopOrder.Count == 0 и StopLoss = 0
+                            // значит это условие будет true для всех стратегий
+                            StopLoss == decimal.Zero ||
+                            this.ListStopOrder.Count == 0 &&
+                            this.LastPrice > StopLoss + CalclOtstup(StopLoss, this.StepLevel * this.Levels)//
+                        || this.Strategys == Strategy.MoveNet &&
+                            this.ListStopOrder.Count > 0 &&
+                            this.LastPrice > this.ListStopOrder[0].ConditionPrice
+                                + CalclOtstup(this.ListStopOrder[0].ConditionPrice, this.StepLevel * StrategyMoveNetOtstup))
+                    {
+                        SetUpNetwork();
+                        Log("СРАБОТАЛ SetUpNetwork " + this.SecurityCode);
+                    }
+                    //добавление СтопОрдеров
+                    if (this.ListStopOrder.Count > 0 &&
+                        this.ListStopOrder.Count < this.Levels && this.LastPrice > this.ListStopOrder[0].ConditionPrice
+                        + CalclOtstup(this.ListStopOrder[0].ConditionPrice, this.StepLevel)
+                        + CalclOtstup(this.ListStopOrder[0].ConditionPrice, this.Cels) + Step * 2)
+                    {
+                        otstup = ClassCode == "SPBFUT" ? StepLevel : CalclOtstup(this.ListStopOrder[0].ConditionPrice, this.StepLevel);
+                        this.ListStopOrder.Insert(0, CreateStopOrder(this.ListStopOrder[0].ConditionPrice + otstup, Operation.Buy));
+                        Log("ДОБАВЛЕН СТОП ОРДЕР НА " + this.operation + " по цене:" + (this.ListStopOrder[0].ConditionPrice) + " " + this.SecurityCode);
+                    }
+                    // СТОП УБЫТКА = StopLoss
+                    if (this.lastPrice < StopLoss && this.ListStopOrder.Count == 0 && StopLoss != decimal.Zero)
+                    {
+                        this.KillOperationOrders();
+                        //this.CloseAllpositions();
+                        StopLoss = decimal.Zero;
+                        this.Isactiv = false;
+                        Log("СРАБОТАЛ StopLoss");
+                    }
                 }
 
             }
@@ -320,7 +350,7 @@ namespace QUIKSharpTEST2
                     - CalclOtstup(ListStopOrder[0].ConditionPrice, this.Cels) - Step * 2)
                 {
                     otstup = ClassCode == "SPBFUT" ? StepLevel : CalclOtstup(this.ListStopOrder[0].ConditionPrice, this.StepLevel);
-                    this.ListStopOrder.Insert(0, CreateStopOrder(this.ListStopOrder[0].ConditionPrice + otstup, Operation.Buy).Result);
+                    this.ListStopOrder.Insert(0, CreateStopOrder(this.ListStopOrder[0].ConditionPrice + otstup, Operation.Buy));
                     Log("ДОБАВЛЕН СТОП ОРДЕР НА "+ this.operation+ " по цене:" + (this.ListStopOrder[0].ConditionPrice) + " " + this.SecurityCode);
                 }
                 // СТОП УБЫТКА = StopLoss
@@ -333,6 +363,60 @@ namespace QUIKSharpTEST2
                     Log("СРАБОТАЛ StopLoss");
                 }
 
+            } 
+        }
+
+        private void Events_StrategyIntersMA(Candle candle)
+        {
+            if (candle.SecCode == SecurityCode && Isactiv)
+            {
+                string FAST = "FAST", SLOW = "SLOW";
+                int i = 3;
+
+                if (Strategys == Strategy.IntersMA)
+                {
+                    var N = _quik.Candles.GetNumCandles(FAST).Result;// количество свечек 
+                    var LineFAST = _quik.Candles.GetCandles(FAST, 0, N - i, i).Result;
+                    var LineSLOW = _quik.Candles.GetCandles(SLOW, 0, N - i, i).Result;
+
+                    Log("LineFAST " + LineFAST[0].Close + " " + LineFAST[1].Close + " " + LineFAST[2].Close/* + " " + LineFAST[3].Close*/);
+                    Log("LineSLOW " + LineSLOW[0].Close + " " + LineSLOW[1].Close + " " + LineSLOW[2].Close/* + " " + LineSLOW[3].Close*/);
+
+                    if (/*operation == Operation.Buy &&*/
+                        LineFAST[2].Close > LineSLOW[2].Close &&
+                        LineFAST[1].Close > LineSLOW[1].Close &&
+                        LineFAST[0].Close < LineSLOW[0].Close)
+                    {
+                        // ПОКУПКА
+                        Log("ПОКУПКА");
+                        if (Positions == 0)
+                        {
+                            _quik.Orders.SendLimitOrder(ClassCode, SecurityCode, AccountID, Operation.Buy, lastPrice + Step * 2, Quantity);
+                        }
+                        if (Positions < 0) // разворот
+                        {
+                            _quik.Orders.SendLimitOrder(ClassCode, SecurityCode, AccountID, Operation.Buy, lastPrice + Step * 2, (int)Positions * 2);
+                        }
+                    }
+                    //if (operation != Operation.Sell) return;
+                    if (/*operation == Operation.Sell &&*/
+                        LineFAST[2].Close < LineSLOW[2].Close &&
+                        LineFAST[1].Close < LineSLOW[1].Close &&
+                        LineFAST[0].Close > LineSLOW[0].Close)
+                    {
+                        //ПРОДАЖА
+                        Log("ПРОДАЖА");
+                        if (Positions == 0)
+                        {
+                            _quik.Orders.SendLimitOrder(ClassCode, SecurityCode, AccountID, Operation.Sell, lastPrice - Step * 2, Quantity);
+                        }
+                        if (Positions > 0) // разворот
+                        {
+                            _quik.Orders.SendLimitOrder(ClassCode, SecurityCode, AccountID, Operation.Sell, lastPrice - Step * 2, (int)Positions * 2);
+                        }
+                    }
+
+                }
             }
         }
 
@@ -412,17 +496,20 @@ namespace QUIKSharpTEST2
                         CreateStopOrder(price, op);
                         Log("ВЫСТАВЛЕН ОРДЕР НА "+ op + " по цене: " + price + " " + SecurityCode);
                     }
-                    else if(order.TransID != spOrder.TransId && order.Operation != operation && Isactiv)
-                    {
-                        //для опоздавших ордеров, на всякий слуай
-                        cel = ClassCode == "SPBFUT" ? cel = this.Cels : cel = CalclOtstup(spOrder.ConditionPrice, this.Cels);
-                        Operation op = this.operation == Operation.Buy ? op = Operation.Sell : op = Operation.Buy;
-                        price = this.operation == Operation.Buy ? order.Price + cel : order.Price - cel;
-                        CreateStopOrder(price, op);
-                        Log("ВЫСТАВЛЕН ОРДЕР >>> не из листа <<< , НА " + op + " по цене: " + price + " " + SecurityCode);
-                    }
                 }
-                 
+                ////для опоздавших и не снятых ордеров ордеров, на всякий слуай
+                //if (order.TransID != 0 &&
+                //    order.Operation == operation &&
+                //    order.State == State.Completed &&
+                //    Isactiv)
+                //{ 
+                //    cel = ClassCode == "SPBFUT" ? cel = this.Cels : cel = CalclOtstup(order.Price, this.Cels);
+                //    Operation op = this.operation == Operation.Buy ? op = Operation.Sell : op = Operation.Buy;
+                //    price = this.operation == Operation.Buy ? order.Price + cel : order.Price - cel;
+                //    CreateStopOrder(price, op, order.Quantity) ;
+                //    Log("ВЫСТАВЛЕН ОРДЕР >>> не из листа <<< , НА " + op + " по цене: " + price + " " + SecurityCode);
+                //}
+
                 //Console.WriteLine("Оrder № - " + order.OrderNum + ", TransID - " + order.TransID + ",  SecCode - " + order.SecCode + " - " + order.Operation + ", State - " + order.State);
             }
         }
@@ -452,7 +539,7 @@ namespace QUIKSharpTEST2
                     pr -= CalclOtstup(pr, this.StepLevel) :
                     pr += CalclOtstup(pr, this.StepLevel); 
 
-                await KillOperationOrders().ConfigureAwait(false);
+                KillOperationOrders();
                 Log("Чистка от сетки "+ this.operation+"- ордеров перед переносом сетки " + this.Name);
             }
 
@@ -465,7 +552,7 @@ namespace QUIKSharpTEST2
                 // await Task.Delay(500);
                 //wnd.Dispatcher.Invoke(new Action(() => {}));
                 //await Task.Run(() => { });  
-                ListStopOrder.Add(CreateStopOrder(pr,this.operation).Result);
+                ListStopOrder.Add(CreateStopOrder(pr,this.operation));
                 //CreateStopOrder(pr, Operation.Buy);
                 //     await Task.Run(() => {  });
                 if (flag)
@@ -492,7 +579,7 @@ namespace QUIKSharpTEST2
 
             return ListStopOrder;
         }
-        private async Task<StopOrder> CreateStopOrder(decimal pr, Operation BuySel)
+        private StopOrder CreateStopOrder(decimal pr, Operation BuySel)
         { 
                 StopOrder stopOrder = new()
                 {
@@ -518,7 +605,32 @@ namespace QUIKSharpTEST2
                 stopOrder.TransId = t;
                 return stopOrder; 
         }
+        private StopOrder CreateStopOrder(decimal pr, Operation BuySel, int _Quantity)
+        {
+            StopOrder stopOrder = new()
+            {
+                ClientCode = this.СlientCode,
+                Account = this.AccountID,
+                ClassCode = this.ClassCode,
+                SecCode = this.SecurityCode,
+                Offset = Convert.ToDecimal(((this.Step).ToString()).TrimEnd('0')),//писец пилорама, зато работает!
+                OffsetUnit = OffsetUnits.PRICE_UNITS,
+                Spread = Convert.ToDecimal(((this.Step).ToString()).TrimEnd('0')),
+                SpreadUnit = OffsetUnits.PRICE_UNITS,
+                StopOrderType = StopOrderType.TakeProfit,
+                Condition = BuySel == Operation.Buy ? Condition.LessOrEqual : Condition.MoreOrEqual,
+                ConditionPrice = Math.Round(pr, this.PriceAccuracy),
+                ConditionPrice2 = 0, //не нужна для тей-профит
+                Price = 0,  //не нужна для тей-профит
+                Operation = BuySel,
+                Quantity = _Quantity,
+                Comment = BuySel == Operation.Buy ? "Buy" : "Sel",
+            };
 
+            var t = _quik.StopOrders.CreateStopOrder(stopOrder).Result;
+            stopOrder.TransId = t;
+            return stopOrder;
+        }
         /// <summary>
         /// Закроет все, Ордеры Buy и Sell и this.Positions 
         /// </summary> 
@@ -535,26 +647,42 @@ namespace QUIKSharpTEST2
         /// <summary>
         /// Закроет все ордеры по направлению this.operation
         /// </summary> 
-        public async Task KillOperationOrders()
+        public async void KillOperationOrders()
         {
             if (this.Strategys == Strategy.Default) this.Isactiv = false; 
-            this.ListStopOrder.Clear(); 
+            //this.ListStopOrder.Clear(); // закомментировать когда будет сделано ожидание расчета минимума-максимума
             //this.StopLoss = 0;
 
             var orders = await _quik.Orders.GetOrders(this.ClassCode, this.SecurityCode).ConfigureAwait(true);
             foreach (var order in orders.Where(order => order.State == State.Active))
             {
                 await _quik.Orders.KillOrder(order).ConfigureAwait(false); 
-            } 
+            }
+
+            //var Stoporders = await _quik.StopOrders.GetStopOrders(this.ClassCode, this.SecurityCode).ConfigureAwait(true);
+            //foreach (var stoporder in Stoporders.Where(stoporder => 
+            //             stoporder.State == State.Active 
+            //             && stoporder.Operation == this.operation 
+            //             && (stoporder.Flags & 0x8000) == 0)) // (0x8000)  Идет расчет минимума-максимума 
+            //{
+            //    await _quik.StopOrders.KillStopOrder(stoporder).ConfigureAwait(false);
+            //}
 
             var Stoporders = await _quik.StopOrders.GetStopOrders(this.ClassCode, this.SecurityCode).ConfigureAwait(true);
-            foreach (var stoporder in Stoporders.Where(stoporder => 
-                         stoporder.State == State.Active 
-                         && stoporder.Operation == this.operation 
+            foreach (var stoporder in Stoporders.Where(stoporder =>
+                         stoporder.State == State.Active
+                         && stoporder.Operation == this.operation
                          && (stoporder.Flags & 0x8000) == 0)) // (0x8000)  Идет расчет минимума-максимума 
-            { 
-                await _quik.StopOrders.KillStopOrder(stoporder).ConfigureAwait(false); 
-            } 
+            {
+                foreach (var s in this.ListStopOrder.ToList().Where(s =>
+                            stoporder.TransId == s.TransId/* && (stoporder.Flags & 0x8000) != 0*/))
+                {
+                    //ордеры по которым идут расчеты останутся в листе стоп-ордеров
+                    this.ListStopOrder.Remove(s);
+                    await _quik.StopOrders.KillStopOrder(stoporder).ConfigureAwait(false);
+                } 
+            }
+
             Log(SecurityCode + " Kill Operation Orders");
         }
 
@@ -611,8 +739,7 @@ namespace QUIKSharpTEST2
             Console.WriteLine(SecurityCode + " Kill All Orders");
         }
         private void CandlesOnNewCandle(Candle candle)
-        { 
-            //Console.WriteLine(candle.SecCode + "  "+candle.ToString());
+        {
         } 
 
         #region Свойства
@@ -765,15 +892,20 @@ namespace QUIKSharpTEST2
         /// </summary>
         Default,
         /// <summary>
+        /// Обычная стратегия, есть StopLoss, есть добавление сетки в исходное состояние
+        /// если LastPrice отодвинется на некоторое расстояние от цены ближайшего ордера
+        /// </summary>
+        ToTrend,
+        /// <summary>
         /// Стратегия такая ка Default, но сетка движется за ценой если та уходит дальше
         /// заданных пределов
         /// </summary>
         MoveNet,
         /// <summary>
         /// Стратегия пересечения средних Moving Average, медленной с периодом 20
-        /// и быстрой с периодом 5
+        /// и быстрой с периодом 5, =====график надо поставить на 5 минут=====
         /// </summary>
-        ClassicMA
+        IntersMA
     }
 }
 

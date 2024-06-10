@@ -34,10 +34,12 @@ namespace QUIKSharpTEST2
 
         public void KillOperationOrders()
         {
-            _SelectedTool.KillOperationOrders(); 
+            _SelectedTool.Isactiv = false;
+           // _SelectedTool.KillOperationOrders(); 
         }
         public void ClosPositions()
-        { 
+        {
+            _SelectedTool.Isactiv = false; 
             _SelectedTool.CloseAllpositions();
         }
 

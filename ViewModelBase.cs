@@ -1,4 +1,5 @@
-﻿using System;
+﻿using QuikSharp.DataStructures;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -19,7 +20,7 @@ namespace QUIKSharpTEST2
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
-        protected bool SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
+        protected bool SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null, Object? op = null)
         {
             if (EqualityComparer<T>.Default.Equals(field, value)) return false;
             field = value;

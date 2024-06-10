@@ -1,27 +1,14 @@
 ﻿using QuikSharp;
 using QuikSharp.DataStructures;
-using QuikSharp.DataStructures.Transaction; 
+using QuikSharp.DataStructures.Transaction;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Diagnostics;
 using System.Globalization;
-using System.Runtime.CompilerServices;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
-using QUIKSharpTEST2;
-using Condition = QuikSharp.DataStructures.Condition;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Windows.Controls;
-using System.Runtime.ConstrainedExecution;
-using System.Threading;
-using Newtonsoft.Json.Linq;
-using System.Xml.Linq;
-using System.Timers;
 using System.Windows.Threading;
-using Timer = System.Threading.Timer;
+using Condition = QuikSharp.DataStructures.Condition;
 
 
 namespace QUIKSharpTEST2
@@ -49,6 +36,7 @@ namespace QUIKSharpTEST2
         private Operation _operation = Operation.Buy;
         private Strategy _strategys = Strategy.Default;
         private DispatcherTimer timer = new();
+        private string IdSK;
         //MainWindow wnd = new MainWindow();
         /// <summary>
         ///     Конструктор класса
@@ -77,6 +65,7 @@ namespace QUIKSharpTEST2
         {
             try
             {
+                IdSK = secCode;
                 SecurityCode = secCode;
                 ClassCode = quik.Class.GetSecurityClass("SPBFUT,TQBR,TQBS,TQNL,TQLV,TQNE,TQOB,SPBXM,QJSIM", secCode).Result;
 
@@ -141,27 +130,25 @@ namespace QUIKSharpTEST2
             //    quik.Candles.NewCandle += CandlesOnNewCandle;
             //}
 
-            Console.WriteLine("Подписываемся на стакан...");
-            quik.OrderBook.Subscribe(ClassCode, SecurityCode).Wait();
-            if (quik.OrderBook.IsSubscribed(ClassCode, SecurityCode).Result)
-            {
-                // var toolOrderBook = new OrderBook();
-                // Console.WriteLine("Подписка на стакан прошла успешно.");
-                // _quik.Events.OnQuote += Events_OnQuote; ;
-                // Console.WriteLine("Подписываемся на колбэк 'OnQuote'...");
-                // Console.WriteLine(SecurityCode + " Все ОК");
-            }
-            else Console.WriteLine(SecurityCode + " Все ПЛОХО");
+            //Console.WriteLine("Подписываемся на стакан...");
+            //quik.OrderBook.Subscribe(ClassCode, SecurityCode).Wait();
+            //if (quik.OrderBook.IsSubscribed(ClassCode, SecurityCode).Result)
+            //{
+            //    // var toolOrderBook = new OrderBook();
+            //    // Console.WriteLine("Подписка на стакан прошла успешно.");
+            //    // _quik.Events.OnQuote += Events_OnQuote; ;
+            //    // Console.WriteLine("Подписываемся на колбэк 'OnQuote'...");
+            //    // Console.WriteLine(SecurityCode + " Все ОК");
+            //}
+            //else Console.WriteLine(SecurityCode + " Все ПЛОХО");
 
             _quik.Events.OnOrder += Events_OnOrder;
             _quik.Events.OnStopOrder += Events_OnStopOrder;
-            _quik.Events.OnTransReply += Events_OnTransReply;
-            _quik.Events.OnParam += Events_OnParam;
+            //_quik.Events.OnTransReply += Events_OnTransReply;
+            //_quik.Events.OnParam += Events_OnParam_Strategy_IntersMA;
             _quik.Events.OnDepoLimit += Events_OnDepoLimit;
-            _quik.Events.OnFuturesClientHolding +=EventsOnOnFuturesClientHolding;
-            timer.Tick += Timer_Tick;
-            timer.Interval = TimeSpan.FromMilliseconds(500);
-            timer.Start();
+            _quik.Events.OnFuturesClientHolding +=EventsOnOnFuturesClientHolding; 
+            SwitchStrategys(Strategys);
         }
  
         private void Log(string s)
@@ -213,13 +200,10 @@ namespace QUIKSharpTEST2
         }
 
         private void Timer_Tick(object sender, EventArgs e)
-        {
-            if (Strategys != Strategy.IntersMA)
-            {
-                Log("Strategys != Strategy.IntersMA");
-            }
+        { 
+            
         }
-
+         
         private void GetLastPrice()
         { 
             LastPrice = Convert.ToDecimal(_quik.Trading.GetParamEx(ClassCode, SecurityCode, "LAST").Result.ParamValue
@@ -249,40 +233,87 @@ namespace QUIKSharpTEST2
             otstup = ((otstup % this.Step) != 0) ? otstup - (otstup % this.Step) : otstup;
             return otstup;
         }
+        public bool SwitchStrategys(Strategy val)
+        { 
+            switch (val)
+            {
+                case Strategy.Default:
+                    _quik.Events.OnParam += Events_OnParam_Strategy_Default;
+                    _quik.Events.OnParam -= Events_OnParam1_Strategy_ToTrend;
+                    _quik.Events.OnParam -= Events_OnParam_Strategy_MoveNet; 
+                    _quik.Events.OnParam -= Events_OnParam_Strategy_IntersMA; 
+                    break;
+                case Strategy.ToTrend:
+                    _quik.Events.OnParam -= Events_OnParam_Strategy_Default;
+                    _quik.Events.OnParam += Events_OnParam1_Strategy_ToTrend;
+                    _quik.Events.OnParam -= Events_OnParam_Strategy_MoveNet;
+                    _quik.Events.OnParam -= Events_OnParam_Strategy_IntersMA;
+                    break;
+                case Strategy.MoveNet:
+                    _quik.Events.OnParam -= Events_OnParam_Strategy_Default;
+                    _quik.Events.OnParam -= Events_OnParam1_Strategy_ToTrend;
+                    _quik.Events.OnParam += Events_OnParam_Strategy_MoveNet;
+                    _quik.Events.OnParam -= Events_OnParam_Strategy_IntersMA; 
+                    break;
+                case Strategy.IntersMA:
+                    _quik.Events.OnParam -= Events_OnParam_Strategy_Default;
+                    _quik.Events.OnParam -= Events_OnParam1_Strategy_ToTrend;
+                    _quik.Events.OnParam -= Events_OnParam_Strategy_MoveNet;
+                    _quik.Events.OnParam += Events_OnParam_Strategy_IntersMA; 
+                    break; 
+            }
 
-        private void Events_OnParam(Param par)
+            return true;
+        }
+
+        private void Events_OnParam_Strategy_IntersMA(Param par)
         {
+            if (par.SecCode != SecurityCode) return;
+        }
+
+        private void Events_OnParam_Strategy_MoveNet(Param par)
+        {
+            if (par.SecCode != SecurityCode) return;
+                Log("333333 " + par.SecCode);
+        }
+
+        private void Events_OnParam1_Strategy_ToTrend(Param par)
+        {
+            if (par.SecCode != SecurityCode) return;
+            Log("222222 "+ SecurityCode);
+        }
+
+        private void Events_OnParam_Strategy_Default(Param par)
+        {
+            
             decimal otstup;
             int StrategyMoveNetOtstup = 2;
 
             #region контрольный регион
             if (par.SecCode == SecurityCode)
             {
+                Log("11111 " + SecurityCode);
                 GetLastPrice();
             } 
-
-            if (Strategys != Strategy.IntersMA &&
-                _quik.Candles.IsSubscribed(ClassCode, SecurityCode, CandleInterval.M5).Result)
-            {
-                _quik.Candles.Unsubscribe(ClassCode, SecurityCode, CandleInterval.M5).Wait();
-                Log("Отписка от 5 минуты " + SecurityCode + " ...");
-                _quik.Candles.Subscribe(ClassCode, SecurityCode, CandleInterval.M1).Wait();
-                Log("Подписались на 1 минут " + SecurityCode + " ...");
-            }
-            else if (Strategys == Strategy.IntersMA && 
-                     !_quik.Candles.IsSubscribed(ClassCode, SecurityCode, CandleInterval.M5).Result)
-            {
-                _quik.Candles.Unsubscribe(ClassCode, SecurityCode, CandleInterval.M1).Wait();
-                Log("Отписка от 1 минуты " + SecurityCode + " ...");
-                _quik.Candles.Subscribe(ClassCode, SecurityCode, CandleInterval.M5).Wait();
-                Log("Подписались на 5 минут " + SecurityCode + " ...");
-                _quik.Candles.NewCandle += Events_NewCandle_StrategyIntersMA;
-            }
-
-            if (Strategys == Strategy.ToTrend)
-            {
-                _quik.Events.OnParam += Events_OnParam1_StrategyToTrend;
-            }
+            if (par.SecCode == SecurityCode)
+                if (Strategys != Strategy.IntersMA &&
+                    _quik.Candles.IsSubscribed(ClassCode, SecurityCode, CandleInterval.M5).Result)
+                {
+                    _quik.Candles.Unsubscribe(ClassCode, SecurityCode, CandleInterval.M5).Wait();
+                    _quik.Candles.NewCandle -= Events_NewCandle_5M_StrategyIntersMA;
+                    Log("Отписка от 5 минуты " + SecurityCode + " ...");
+                    //_quik.Candles.Subscribe(ClassCode, SecurityCode, CandleInterval.M1).Wait();
+                    //Log("Подписались на 1 минут " + SecurityCode + " ...");
+                }
+                else if (Strategys == Strategy.IntersMA && 
+                         !_quik.Candles.IsSubscribed(ClassCode, SecurityCode, CandleInterval.M5).Result)
+                {
+                    //_quik.Candles.Unsubscribe(ClassCode, SecurityCode, CandleInterval.M1).Wait();
+                    //Log("Отписка от 1 минуты " + SecurityCode + " ...");
+                    _quik.Candles.Subscribe(ClassCode, SecurityCode, CandleInterval.M5).Wait();
+                    Log("Подписались на 5 минут " + SecurityCode + " ...");
+                    _quik.Candles.NewCandle += Events_NewCandle_5M_StrategyIntersMA;
+                } 
 
             if (!Isactiv && par.SecCode == SecurityCode && ListStopOrder.Count > 0)
             {
@@ -384,21 +415,18 @@ namespace QUIKSharpTEST2
                 }
 
             } 
-        }
+        } 
 
-        private void Events_OnParam1_StrategyToTrend(Param par)
-        {
-            Log("_quik.Events.OnParam += Events_OnParam1_StrategyToTrend;"); 
-        }
-
-        private void Events_NewCandle_StrategyIntersMA(Candle candle)
-        {
-            if (candle.SecCode == SecurityCode && Isactiv)
+        private void Events_NewCandle_5M_StrategyIntersMA(Candle candle)
+        { 
+            if (candle.SecCode == SecurityCode)
             {
+                Log(SecurityCode + " - Events_NewCandle_5M_StrategyIntersMA(Candle candle)");
+
                 string FAST = "FAST", SLOW = "SLOW";
                 int i = 3;
 
-                if (Strategys == Strategy.IntersMA)
+                if (Strategys == Strategy.IntersMA && Isactiv)
                 {
                     var N = _quik.Candles.GetNumCandles(FAST).Result;// количество свечек 
                     var LineFAST = _quik.Candles.GetCandles(FAST, 0, N - i, i).Result;
@@ -565,11 +593,18 @@ namespace QUIKSharpTEST2
                     pr += CalclOtstup(pr, this.StepLevel); 
 
                 KillOperationOrders();
-                Log("Чистка от сетки "+ this.operation+"- ордеров перед переносом сетки " + this.Name);
+                if (ListStopOrder.Count == 0)
+                {
+                    Log("Чистка от сетки " + this.operation + "- ордеров перед переносом сетки " + this.Name);
+                }
+                else
+                {
+                    Log("Ждем завершения расчета MIN/MAX " + this.operation + "- ордера  " + this.Name);
+                }
             }
 
             //foreach (var i in Enumerable.Range(0, this.Levels)){}
-             
+            if (ListStopOrder.Count != 0) return ListStopOrder;
             for (int n = 0; n < this.Levels; n++)
             {
                 //Application.Current.Dispatcher.Invoke(new Action(() => { wnd.Log(s);}));
@@ -577,10 +612,10 @@ namespace QUIKSharpTEST2
                 // await Task.Delay(500);
                 //wnd.Dispatcher.Invoke(new Action(() => {}));
                 //await Task.Run(() => { });  
-                ListStopOrder.Add(CreateStopOrder(pr,this.operation));
+                ListStopOrder.Add(CreateStopOrder(pr, this.operation));
                 //CreateStopOrder(pr, Operation.Buy);
                 //     await Task.Run(() => {  });
-                if (flag)
+                if (n == 0)
                 {
                     if (ClassCode == "SPBFUT")
                     {
@@ -590,18 +625,17 @@ namespace QUIKSharpTEST2
                     {
                         otstup = pr * this.StepLevel;
                         otstup = ((otstup % this.Step) != 0) ? otstup - (otstup % this.Step) : otstup;
-                        flag = false;
-                    } 
+                        //flag = false;
+                    }
                 }
 
                 pr = this.operation == Operation.Buy ? pr -= otstup : pr += otstup;
-            }
+            } 
 
             var ToBuySel = CalclOtstup(ListStopOrder[ListStopOrder.Count - 1].ConditionPrice, this.StepLevel)+ this.Step;
             this.StopLoss = this.operation == Operation.Buy ?
                 ListStopOrder[ListStopOrder.Count - 1].ConditionPrice - ToBuySel :
                 ListStopOrder[ListStopOrder.Count - 1].ConditionPrice + ToBuySel;
-
             return ListStopOrder;
         }
         private StopOrder CreateStopOrder(decimal pr, Operation BuySel)
@@ -709,27 +743,7 @@ namespace QUIKSharpTEST2
             }
 
             Log(SecurityCode + " Kill Operation Orders");
-        }
-
-        /// <summary>
-        /// проверка наличия активных ордеров, стоп-ордеров,
-        /// бывает вылазит ошибка "невозможно снять ордер" и из за этого сетка не ставиться
-        /// </summary> 
-        public async Task<bool> GetActivOrdTask()
-        {
-            bool flag = true;
-
-            var Stoporders = await _quik.StopOrders.GetStopOrders(this.ClassCode, this.SecurityCode).ConfigureAwait(true);
-            foreach (var stoporder in Stoporders.ToList())
-            {
-                if (stoporder.State == State.Active && stoporder.FilledQuantity != 0)
-                {
-                    flag = false;
-                } 
-            }
-            
-            return flag;
-        }
+        } 
 
         public async Task KillAllOrders()
         {
@@ -807,7 +821,7 @@ namespace QUIKSharpTEST2
         public Strategy Strategys // { get; set; } = Operation.Buy;
         {
             get => _strategys;
-            set => SetField(ref _strategys, value);
+            set => SetField(ref _strategys, value,null, SwitchStrategys(value));
         }
 
         /// <summary>

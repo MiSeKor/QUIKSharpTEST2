@@ -16,13 +16,13 @@ namespace QUIKSharpTEST2
         //MainWindow wnd = (MainWindow)App.Current.MainWindow; 
 
         private ObservableCollection<Tool> _ListTools;
-        private Tool _SelectedTool;
+        private Tool _SelectedTool; 
 
         public ObservableCollection<Tool> ListTools
         {
             get => _ListTools;
             set => SetField(ref _ListTools, value);
-        }
+        } 
 
         #region SelectedItem
         public Tool SelectedTool

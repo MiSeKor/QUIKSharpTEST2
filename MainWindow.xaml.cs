@@ -52,7 +52,7 @@ namespace QUIKSharpTEST2
 
         private void MainWind_Loaded(object sender, RoutedEventArgs e)
         {
-            //СreateQuik(); 
+            СreateQuik(); 
             MV.ListTools = [AddTool("SBER"), AddTool("VTBR"), AddTool("RUAL"), AddTool("GDM4")];
 
             //

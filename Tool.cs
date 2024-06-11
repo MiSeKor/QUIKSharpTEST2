@@ -246,7 +246,7 @@ namespace QUIKSharpTEST2
             }
             else
             {
-                Log("ОТКЛЮЧЕНА ВКЛЮЧЕНА " + this.SecurityCode);
+                Log("ВКЛЮЧЕНА АВТОМАТИКА " + this.SecurityCode);
             }
             return val;
         }
@@ -258,25 +258,37 @@ namespace QUIKSharpTEST2
                     _quik.Events.OnParam += Events_OnParam_Strategy_Default;
                     _quik.Events.OnParam -= Events_OnParam1_Strategy_ToTrend;
                     _quik.Events.OnParam -= Events_OnParam_Strategy_MoveNet;
-                    _quik.Candles.NewCandle -= Events_NewCandle_5M_StrategyIntersMA;
+                    _quik.Candles.NewCandle -= Events_NewCandle_M5_StrategyIntersMA;
                     break;
                 case Strategy.ToTrend:
                     _quik.Events.OnParam -= Events_OnParam_Strategy_Default;
                     _quik.Events.OnParam += Events_OnParam1_Strategy_ToTrend;
                     _quik.Events.OnParam -= Events_OnParam_Strategy_MoveNet;
-                    _quik.Candles.NewCandle -= Events_NewCandle_5M_StrategyIntersMA;
+                    _quik.Candles.NewCandle -= Events_NewCandle_M5_StrategyIntersMA;
                     break;
                 case Strategy.MoveNet:
                     _quik.Events.OnParam -= Events_OnParam_Strategy_Default;
                     _quik.Events.OnParam -= Events_OnParam1_Strategy_ToTrend;
                     _quik.Events.OnParam += Events_OnParam_Strategy_MoveNet;
-                    _quik.Candles.NewCandle -= Events_NewCandle_5M_StrategyIntersMA;
+                    _quik.Candles.NewCandle -= Events_NewCandle_M5_StrategyIntersMA;
                     break;
                 case Strategy.IntersMA:
                     _quik.Events.OnParam -= Events_OnParam_Strategy_Default;
                     _quik.Events.OnParam -= Events_OnParam1_Strategy_ToTrend;
                     _quik.Events.OnParam -= Events_OnParam_Strategy_MoveNet;
-                    _quik.Candles.NewCandle += Events_NewCandle_5M_StrategyIntersMA;
+                    if (_quik.Candles.IsSubscribed(ClassCode, SecurityCode, CandleInterval.M1).Result)
+                    {
+                        _quik.Candles.Unsubscribe(ClassCode, SecurityCode, CandleInterval.M1).Wait();
+                        Log("отписка М1");
+                    }
+                    if (!_quik.Candles.IsSubscribed(ClassCode, SecurityCode, CandleInterval.M5).Result)
+                    {
+                        Log("нет подписки М5");
+                        _quik.Candles.Subscribe(ClassCode, SecurityCode, CandleInterval.M5).Wait();
+                        if (_quik.Candles.IsSubscribed(ClassCode, SecurityCode, CandleInterval.M5).Result)
+                            Log("подписка М5");
+                    } 
+                    _quik.Candles.NewCandle += Events_NewCandle_M5_StrategyIntersMA;
                     break; 
             }
 
@@ -285,8 +297,7 @@ namespace QUIKSharpTEST2
          
         private void Events_OnParam_Strategy_MoveNet(Param par)
         { 
-            decimal otstup;
-            int StrategyMoveNetOtstup = 2;
+            decimal otstup1 = 0.003M; decimal otstup2 = 0.005M; 
 
             if (par.SecCode == SecurityCode && Isactiv)
             {
@@ -294,10 +305,10 @@ namespace QUIKSharpTEST2
                 {
                     if (StopLoss == decimal.Zero ||
                         this.ListStopOrder.Count == 0 &&
-                        this.LastPrice > StopLoss + CalclOtstup(StopLoss, this.StepLevel) * StrategyMoveNetOtstup ||
+                        this.LastPrice > StopLoss + CalclOtstup(StopLoss, otstup1) ||
                         this.ListStopOrder.Count > 0 &&
                         this.LastPrice > this.ListStopOrder[0].ConditionPrice
-                        + CalclOtstup(this.ListStopOrder[0].ConditionPrice, this.StepLevel) * StrategyMoveNetOtstup)
+                        + CalclOtstup(this.ListStopOrder[0].ConditionPrice, otstup2))
                     {
                         SetUpNetwork();
                         Log("СРАБОТАЛ SetUpNetwork " + this.SecurityCode);
@@ -317,10 +328,10 @@ namespace QUIKSharpTEST2
                 {
                     if (StopLoss == decimal.Zero ||
                         this.ListStopOrder.Count == 0 &&
-                        this.LastPrice < StopLoss - CalclOtstup(StopLoss, this.StepLevel) * StrategyMoveNetOtstup ||
+                        this.LastPrice < StopLoss - CalclOtstup(StopLoss, otstup1) ||
                         this.ListStopOrder.Count > 0 &&
                         this.LastPrice < this.ListStopOrder[0].ConditionPrice
-                        - CalclOtstup(this.ListStopOrder[0].ConditionPrice, this.StepLevel) * StrategyMoveNetOtstup)
+                        - CalclOtstup(this.ListStopOrder[0].ConditionPrice, otstup2))
                     {
                         SetUpNetwork();
                         Log("СРАБОТАЛ SetUpNetwork " + this.SecurityCode);
@@ -416,14 +427,12 @@ namespace QUIKSharpTEST2
             }
         } 
 
-        private void Events_NewCandle_5M_StrategyIntersMA(Candle candle)
-        {
-            if (candle.SecCode != SecurityCode) return; 
-
-            string FAST = "FAST", SLOW = "SLOW"; int i = 3; 
-
-            if ( Isactiv)
+        private void Events_NewCandle_M5_StrategyIntersMA(Candle candle)
+        { 
+            string FAST = "FAST", SLOW = "SLOW"; int i = 3;
+            if (candle.SecCode == SecurityCode && Isactiv)
             {
+
                 var N = _quik.Candles.GetNumCandles(FAST).Result;// количество свечек 
                 var LineFAST = _quik.Candles.GetCandles(FAST, 0, N - i, i).Result;
                 var LineSLOW = _quik.Candles.GetCandles(SLOW, 0, N - i, i).Result;
@@ -464,8 +473,7 @@ namespace QUIKSharpTEST2
                         _quik.Orders.SendLimitOrder(ClassCode, SecurityCode, AccountID, Operation.Sell, lastPrice - Step * 2, (int)Positions * 2);
                     }
                 }
-
-            }
+            } 
         }
 
         private void Events_OnTransReply(TransactionReply transReply)

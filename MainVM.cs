@@ -6,7 +6,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Data;
+using System.Windows.Input;
 using System.Windows.Media;
+using System.Xml.Linq;
 
 namespace QUIKSharpTEST2
 {
@@ -32,6 +34,22 @@ namespace QUIKSharpTEST2
         }
         #endregion
 
+        // команда удаления  
+        public void Remove()
+        {
+            
+            if (!SelectedTool.Isactiv)
+            {
+                SelectedTool.Log(SelectedTool.Name + " - Удаление и чистка");
+                SelectedTool.KillOperationOrders();
+                SelectedTool.Unsubscribe();
+                ListTools.Remove(SelectedTool); 
+            }
+            else
+            {
+                SelectedTool.Log("Удаление и чистка" + SelectedTool.Name + " НЕ ВОЗМОЖНА при включенной стратегии");
+            }
+        }
         public void KillOperationOrders()
         {
             _SelectedTool.Isactiv = false;
@@ -57,4 +75,24 @@ namespace QUIKSharpTEST2
         }
     }
 
+    internal class RelayCommand(Action<object> execute, Func<object, bool> canExecute = null)
+        : ICommand
+    {
+        event EventHandler ICommand.CanExecuteChanged
+        {
+            add => CommandManager.RequerySuggested += value;
+
+            remove => CommandManager.RequerySuggested -= value;
+        }
+
+        bool ICommand.CanExecute(object parameter)
+        {
+            return canExecute == null || canExecute(parameter);
+        }
+
+        void ICommand.Execute(object parameter)
+        {
+            execute(parameter);
+        }
+    }
 }

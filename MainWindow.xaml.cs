@@ -26,7 +26,7 @@ namespace QUIKSharpTEST2
     /// Логика взаимодействия для MainWindow.xaml
     /// </summary>
     public partial class MainWindow : Window
-    {
+    { 
         //      https://youtu.be/Mb3S2IK3NzI?si=jD-0e_BTP6PYbaOb 
         //СПИСОК ДЕЛ НА C# WPF ОТ НАЧАЛА ДО КОНЦА | DATAGRID | JSON ПАРСИНГ РАБОТА С ФАЙЛАМИ
         //
@@ -34,9 +34,10 @@ namespace QUIKSharpTEST2
         private readonly string Path = $"{Environment.CurrentDirectory}\\ListTools.json";
         //private СlassSaveLoad СlassSaveLoadFiles;
         //public BindingList<Tool> toolList;
-        
+
         //private Tool Sber, Vtbr, Rosn; 
         //private Tool _tool;
+         
         private MainVM MV = new(); 
         public MainWindow()
         {
@@ -144,9 +145,11 @@ namespace QUIKSharpTEST2
 
         private void Button_Click_AddTool(object sender, RoutedEventArgs e)
         {
-            
-            MV.ListTools.Add(AddTool(txBoxAddTool.Text));
-            txBoxAddTool.Text = "";
+            if (txBoxAddTool.Text != "")
+            {
+                MV.ListTools.Add(AddTool(txBoxAddTool.Text));
+                txBoxAddTool.Text = "";
+            }
         }
 
         private Quik СreateQuik()
@@ -176,6 +179,44 @@ namespace QUIKSharpTEST2
             }
 
             return _quik;
-        } 
+        }
+
+        private void Button_Remove_Tool_OnClick(object sender, RoutedEventArgs e)
+        {
+            MV.Remove();
+        }
+
+        private void CloseApp(object sender, MouseButtonEventArgs e)
+        {
+            try
+            {
+                foreach (var t in MV.ListTools.Where(t=> t.ListStopOrder.Count != 0))
+                {
+                    t.KillOperationOrders();
+                }
+                Close();
+            }
+            catch (Exception exception)
+            {
+                MessageBox.Show(exception.Message); 
+            }
+        }
+
+        private void MinimizApp(object sender, MouseButtonEventArgs e)
+        {
+            try
+            {
+                this.WindowState = WindowState.Minimized;
+            }
+            catch (Exception exception)
+            {
+                MessageBox.Show(exception.Message);
+            }
+        }
+
+        private void DragWindow(object sender, MouseButtonEventArgs e)
+        {
+            if(e.LeftButton == MouseButtonState.Pressed) DragMove();
+        }
     }
 }

@@ -26,8 +26,8 @@ namespace QUIKSharpTEST2
         //public Window2 wnd2 => (Window2)Application.Current.MainWindow;
         private decimal lastPrice;  
         private decimal positions; 
-        private decimal _StepLevel = (decimal)0.001; 
-        private decimal _Cels = (decimal)0.01; 
+        private decimal _StepLevel = 0.001M; 
+        private decimal _Cels = 0.01M; 
         private bool _isactiv = false;
         private int _Levels = 5;
         private int _Quantity = 5;
@@ -60,6 +60,23 @@ namespace QUIKSharpTEST2
         //     //wnd.Log(s);
         // }
         //public void Log(string s) => wnd.Log(s);
+        public void Unsubscribe()
+        {
+            if (!Isactiv)
+            {
+                _quik.OrderBook.Unsubscribe(ClassCode, SecurityCode).Wait();
+                _quik.Events.OnQuote -= Events_OnQuote;
+                _quik.Events.OnOrder -= Events_OnOrder;
+                _quik.Events.OnStopOrder -= Events_OnStopOrder;
+                _quik.Events.OnDepoLimit -= Events_OnDepoLimit;
+                _quik.Events.OnFuturesClientHolding -= EventsOnOnFuturesClientHolding;
+                if (_quik.Candles.IsSubscribed(ClassCode, SecurityCode, CandleInterval.M5).Result)
+                {
+                    _quik.Candles.Unsubscribe(ClassCode, SecurityCode, CandleInterval.M5).Wait();
+                }
+                _quik.Candles.NewCandle -= Events_NewCandle_M5_StrategyIntersMA; 
+            }  
+        }
 
         private void GetBaseParam(Quik quik, string secCode)
         {
@@ -150,8 +167,8 @@ namespace QUIKSharpTEST2
             _quik.Events.OnFuturesClientHolding +=EventsOnOnFuturesClientHolding; 
             SwitchStrategys(Strategys);
         }
- 
-        private void Log(string s)
+
+        public void Log(string s)
         {
             Console.WriteLine(s);
         } 
@@ -297,7 +314,7 @@ namespace QUIKSharpTEST2
          
         private void Events_OnParam_Strategy_MoveNet(Param par)
         { 
-            decimal otstup1 = 0.003M; decimal otstup2 = 0.005M; 
+            int i = 3; 
 
             if (par.SecCode == SecurityCode && Isactiv)
             {
@@ -305,10 +322,10 @@ namespace QUIKSharpTEST2
                 {
                     if (StopLoss == decimal.Zero ||
                         this.ListStopOrder.Count == 0 &&
-                        this.LastPrice > StopLoss + CalclOtstup(StopLoss, otstup1) ||
+                        this.LastPrice > StopLoss + CalclOtstup(StopLoss, this.StepLevel) * i ||
                         this.ListStopOrder.Count > 0 &&
                         this.LastPrice > this.ListStopOrder[0].ConditionPrice
-                        + CalclOtstup(this.ListStopOrder[0].ConditionPrice, otstup2))
+                        + CalclOtstup(this.ListStopOrder[0].ConditionPrice, this.StepLevel) * i)
                     {
                         SetUpNetwork();
                         Log("СРАБОТАЛ SetUpNetwork " + this.SecurityCode);
@@ -328,10 +345,10 @@ namespace QUIKSharpTEST2
                 {
                     if (StopLoss == decimal.Zero ||
                         this.ListStopOrder.Count == 0 &&
-                        this.LastPrice < StopLoss - CalclOtstup(StopLoss, otstup1) ||
+                        this.LastPrice < StopLoss - CalclOtstup(StopLoss, this.StepLevel) * i ||
                         this.ListStopOrder.Count > 0 &&
                         this.LastPrice < this.ListStopOrder[0].ConditionPrice
-                        - CalclOtstup(this.ListStopOrder[0].ConditionPrice, otstup2))
+                        - CalclOtstup(this.ListStopOrder[0].ConditionPrice, this.StepLevel) * i)
                     {
                         SetUpNetwork();
                         Log("СРАБОТАЛ SetUpNetwork " + this.SecurityCode);
@@ -751,8 +768,7 @@ namespace QUIKSharpTEST2
             }
 
             Log(SecurityCode + " Kill Operation Orders");
-        } 
-
+        }  
         public async Task KillAllOrders()
         {
             this.ListStopOrder.Clear();

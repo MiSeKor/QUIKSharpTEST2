@@ -190,7 +190,7 @@ namespace QUIKSharpTEST2
         {
             try
             {
-                foreach (var t in MV.ListTools.Where(t=> t.ListStopOrder.Count != 0))
+                foreach (var t in MV.ListTools.Where(t=> t.ListStopOrderBuy.Count != 0))
                 {
                     t.KillOperationOrders();
                 }

@@ -157,7 +157,7 @@
 
                         <!--  https://www.cyberforum.ru/wpf-silverlight/thread687340.html  -->
                         <!--  Многострочный заголовок DataGrid с объединением ячеек  -->
-                        <DataGridTemplateColumn Header="StpOrd" IsReadOnly="True" Width="Auto">
+                        <DataGridTemplateColumn Header="Buy/Sel" IsReadOnly="True" Width="Auto">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <Grid>
@@ -165,9 +165,9 @@
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Grid.Column="0" Text="{Binding ListStopOrder.Count, 
+                                        <TextBlock Grid.Column="0" Text="{Binding ListStopOrderBuy.Count, 
                                                 UpdateSourceTrigger=PropertyChanged}" TextAlignment="Center"/>
-                                        <TextBlock Grid.Column="1" Text="{Binding List_Strategy_ToTrend.Count, 
+                                        <TextBlock Grid.Column="1" Text="{Binding ListStopOrderSel.Count, 
                                                 UpdateSourceTrigger=PropertyChanged}" TextAlignment="Center"/>
                                     </Grid>
                                 </DataTemplate>

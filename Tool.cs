@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Runtime.ConstrainedExecution;
+using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using System.Windows;
@@ -31,8 +32,8 @@ namespace QUIKSharpTEST2
         //public Window2 wnd2 => (Window2)Application.Current.MainWindow;
         private decimal lastPrice;  
         private decimal positions; 
-        private decimal _StepLevel = 0.001M; 
-        private decimal _Cels = 0.01M; 
+        private decimal _StepLevel = 0.005M; 
+        private decimal _Cels = 0.012M; 
         private bool _isactiv = false;
         private int _Levels = 5;
         private int _Quantity = 5; 
@@ -253,21 +254,76 @@ namespace QUIKSharpTEST2
         private decimal CalclOtstup(decimal price, decimal _otstup)
         {
             var otstup = price * _otstup;
-            otstup = ((otstup % this.Step) != 0) ? otstup - (otstup % this.Step) : otstup;
+            otstup = ((otstup % this.Step) > 0) ? otstup - (otstup % this.Step) : otstup;
             return otstup;
         }
 
-        public bool Сheck_Isactiv(bool val)
+        public void Сheck()
         {
-            if (!val)
+            if (Strategys == Strategy.Default)
+            {
+                _quik.Events.OnParam += Events_OnParam_Strategy_Default;
+                _quik.Events.OnOrder += Events_OnOrder;
+                _quik.Events.OnParam -= Events_OnParam_Strategy_ToTrend;
+                _quik.Events.OnOrder -= Events_OnOrder_Strategy_ToTrend;
+                _quik.Events.OnParam -= Events_OnParam_Strategy_MoveNet;
+                _quik.Candles.NewCandle -= Events_NewCandle_M5_StrategyIntersMA;
+            }
+
+            if (Strategys == Strategy.ToTrend)
+            {
+                _quik.Events.OnParam -= Events_OnParam_Strategy_Default;
+                _quik.Events.OnOrder -= Events_OnOrder;
+                _quik.Events.OnParam += Events_OnParam_Strategy_ToTrend;
+                _quik.Events.OnOrder += Events_OnOrder_Strategy_ToTrend;
+                _quik.Events.OnParam -= Events_OnParam_Strategy_MoveNet;
+                _quik.Candles.NewCandle -= Events_NewCandle_M5_StrategyIntersMA;
+            }
+
+            if (Strategys == Strategy.MoveNet)
+            {
+                _quik.Events.OnParam -= Events_OnParam_Strategy_Default;
+                _quik.Events.OnOrder += Events_OnOrder;
+                _quik.Events.OnParam -= Events_OnParam_Strategy_ToTrend;
+                _quik.Events.OnOrder -= Events_OnOrder_Strategy_ToTrend;
+                _quik.Events.OnParam += Events_OnParam_Strategy_MoveNet;
+                _quik.Candles.NewCandle -= Events_NewCandle_M5_StrategyIntersMA;
+            }
+
+            if (Strategys == Strategy.IntersMA)
+            {
+                _quik.Events.OnParam -= Events_OnParam_Strategy_Default;
+                _quik.Events.OnOrder += Events_OnOrder;
+                _quik.Events.OnParam -= Events_OnParam_Strategy_ToTrend;
+                _quik.Events.OnOrder -= Events_OnOrder_Strategy_ToTrend;
+                _quik.Events.OnParam -= Events_OnParam_Strategy_MoveNet;
+                if (_quik.Candles.IsSubscribed(ClassCode, SecurityCode, CandleInterval.M1).Result)
+                {
+                    _quik.Candles.Unsubscribe(ClassCode, SecurityCode, CandleInterval.M1).Wait();
+                    Log("отписка М1");
+                }
+                if (!_quik.Candles.IsSubscribed(ClassCode, SecurityCode, CandleInterval.M5).Result)
+                {
+                    Log("нет подписки М5");
+                    _quik.Candles.Subscribe(ClassCode, SecurityCode, CandleInterval.M5).Wait();
+                    if (_quik.Candles.IsSubscribed(ClassCode, SecurityCode, CandleInterval.M5).Result)
+                        Log("подписка М5");
+                }
+                _quik.Candles.NewCandle += Events_NewCandle_M5_StrategyIntersMA;
+            }
+        }
+
+        public void Сheck_Isactiv()
+        {
+            if (!Isactiv)
             {
                 KillOperationOrders();
+                //var Stoporders = _quik.StopOrders.GetStopOrders(this.ClassCode, this.SecurityCode).Result;
+                //foreach (var order in Stoporders.Where(order => order.State == State.Active && R.TransId == order.TransId))
+                //{
+                //    _quik.StopOrders.KillStopOrder(order); 
+                //}
                 ListStopOrderBuy.Clear();
-                var Stoporders = _quik.StopOrders.GetStopOrders(this.ClassCode, this.SecurityCode).Result;
-                foreach (var order in Stoporders.Where(order => order.State == State.Active && R.TransId == order.TransId))
-                {
-                    _quik.StopOrders.KillStopOrder(order); 
-                }
                 ListStopOrderSel.Clear();
                 R.TransId = 0;
                 StopLoss = decimal.Zero;
@@ -276,8 +332,7 @@ namespace QUIKSharpTEST2
             else
             {
                 Log("ВКЛЮЧЕНА АВТОМАТИКА " + this.SecurityCode);
-            }
-            return val;
+            } 
         }
         public bool SwitchStrategys(Strategy val)
         { 
@@ -331,106 +386,62 @@ namespace QUIKSharpTEST2
 
             return true;
         }
-         
+
         private void Events_OnParam_Strategy_MoveNet(Param par)
         {
-            decimal pr = this.LastPrice; int index = 3; decimal otstup = 0;
+            int index = 3; decimal otstup = 0;
             if (par.SecCode == SecurityCode && Isactiv)
             { 
                 if (operation == Operation.Buy)
                 {
                     if (StopLoss == decimal.Zero ||
-                                this.ListStopOrderBuy.Count == 0 &&
-                                this.LastPrice > StopLoss + CalclOtstup(StopLoss, this.StepLevel) * index ||
-                                this.ListStopOrderBuy.Count > 0 &&
-                                this.LastPrice > this.ListStopOrderBuy[0].ConditionPrice
-                                + CalclOtstup(this.ListStopOrderBuy[0].ConditionPrice, this.StepLevel) * index)
-                    {
-                        otstup = CalclOtstup(pr, this.StepLevel);
-
-                        foreach (var i in Enumerable.Range(0, this.Levels))
-                        {
-                            pr = i == 0 ? pr : pr -= otstup;  
-                            this.ListStopOrderBuy.Add(CreateStopOrder(pr, this.operation));
-                        }
-                        var IndexOtstup = CalclOtstup(ListStopOrderBuy[ListStopOrderBuy.Count - 1].ConditionPrice, this.StepLevel) + this.Step;
-                        this.StopLoss = ListStopOrderBuy[ListStopOrderBuy.Count - 1].ConditionPrice - IndexOtstup; 
-                        Log("СРАБОТАЛ SetUpNetwork " + this.SecurityCode);
+                        this.ListStopOrderBuy.Count == 0 &&
+                        this.LastPrice > StopLoss + CalclOtstup(StopLoss, this.StepLevel) * index ||
+                        this.ListStopOrderBuy.Count > 0 &&
+                        this.LastPrice > this.ListStopOrderBuy[0].ConditionPrice
+                        + CalclOtstup(this.ListStopOrderBuy[0].ConditionPrice, this.StepLevel) * index)
+                    { 
+                        //if (this.ListStopOrderBuy.Count == 0)
+                        //{}
+                            SetNet(this.LastPrice, this.operation);
+                        
                     }
-
+                    // СТОП УБЫТКА = StopLoss
+                    if (this.lastPrice < StopLoss && this.ListStopOrderBuy.Count == 0 && StopLoss != decimal.Zero)
+                    {
+                        this.KillOperationOrders();
+                        //this.CloseAllpositions();
+                        StopLoss = decimal.Zero;
+                        this.Isactiv = false;
+                        Log("СРАБОТАЛ StopLoss");
+                    }
                 }
+                 
                 if (operation == Operation.Sell)
                 {
                     if (StopLoss == decimal.Zero ||
-                                this.ListStopOrderSel.Count == 0 &&
-                                this.LastPrice < StopLoss - CalclOtstup(StopLoss, this.StepLevel) * index ||
-                                this.ListStopOrderSel.Count > 0 &&
-                                this.LastPrice < this.ListStopOrderSel[0].ConditionPrice
-                                - CalclOtstup(this.ListStopOrderSel[0].ConditionPrice, this.StepLevel) * index)
+                        this.ListStopOrderSel.Count == 0 &&
+                        this.LastPrice < StopLoss - CalclOtstup(StopLoss, this.StepLevel) * index ||
+                        this.ListStopOrderSel.Count > 0 &&
+                        this.LastPrice < this.ListStopOrderSel[0].ConditionPrice
+                        - CalclOtstup(this.ListStopOrderSel[0].ConditionPrice, this.StepLevel) * index)
                     {
-                        otstup = CalclOtstup(pr, this.StepLevel);
-
-                        foreach (var i in Enumerable.Range(0, this.Levels))
-                        {
-                            pr = i == 0 ? pr : pr += otstup;
-                            this.ListStopOrderSel.Add(CreateStopOrder(pr, this.operation));
-                        }
-                        var IndexOtstup = CalclOtstup(ListStopOrderSel[ListStopOrderSel.Count - 1].ConditionPrice, this.StepLevel) + this.Step;
-                        this.StopLoss = ListStopOrderSel[ListStopOrderSel.Count - 1].ConditionPrice - IndexOtstup;
-                        Log("СРАБОТАЛ SetUpNetwork " + this.SecurityCode);
+                        //if (this.ListStopOrderSel.Count == 0)
+                        //{}
+                            SetNet(this.LastPrice, this.operation);
+                        
+                    }
+                    // СТОП УБЫТКА = StopLoss
+                    if (this.lastPrice > StopLoss && this.ListStopOrderSel.Count == 0 && StopLoss != decimal.Zero)
+                    {
+                        this.KillOperationOrders();
+                        //this.CloseAllpositions();
+                        StopLoss = decimal.Zero;
+                        this.Isactiv = false;
+                        Log("СРАБОТАЛ StopLoss");
                     }
 
                 }
-                //    int i = 3; 
-
-                //if (par.SecCode == SecurityCode && Isactiv)
-                //{
-                //    if (operation == Operation.Buy)
-                //    {
-                //        if (StopLoss == decimal.Zero ||
-                //            this.ListStopOrderBuy.Count == 0 &&
-                //            this.LastPrice > StopLoss + CalclOtstup(StopLoss, this.StepLevel) * i ||
-                //            this.ListStopOrderBuy.Count > 0 &&
-                //            this.LastPrice > this.ListStopOrderBuy[0].ConditionPrice
-                //            + CalclOtstup(this.ListStopOrderBuy[0].ConditionPrice, this.StepLevel) * i)
-                //        {
-                //            SetUpNetwork();
-                //            Log("СРАБОТАЛ SetUpNetwork " + this.SecurityCode);
-                //        }
-                //        // СТОП УБЫТКА = StopLoss
-                //        if (this.lastPrice < StopLoss && this.ListStopOrderBuy.Count == 0 && StopLoss != decimal.Zero)
-                //        {
-                //            this.KillOperationOrders();
-                //            //this.CloseAllpositions();
-                //            StopLoss = decimal.Zero;
-                //            this.Isactiv = false;
-                //            Log("СРАБОТАЛ StopLoss");
-                //        }
-                //    }
-
-                //    if (operation == Operation.Sell)
-                //    {
-                //        if (StopLoss == decimal.Zero ||
-                //            this.ListStopOrderSel.Count == 0 &&
-                //            this.LastPrice < StopLoss - CalclOtstup(StopLoss, this.StepLevel) * i ||
-                //            this.ListStopOrderSel.Count > 0 &&
-                //            this.LastPrice < this.ListStopOrderSel[0].ConditionPrice
-                //            - CalclOtstup(this.ListStopOrderSel[0].ConditionPrice, this.StepLevel) * i)
-                //        {
-                //            SetUpNetwork();
-                //            Log("СРАБОТАЛ SetUpNetwork " + this.SecurityCode);
-                //        }
-                //        // СТОП УБЫТКА = StopLoss
-                //     if (this.lastPrice > StopLoss && this.ListStopOrderSel.Count == 0 && StopLoss != decimal.Zero)
-                //        {
-                //            this.KillOperationOrders();
-                //            //this.CloseAllpositions();
-                //            StopLoss = decimal.Zero;
-                //            this.Isactiv = false;
-                //            Log("СРАБОТАЛ StopLoss");
-                //        }
-
-                //    }
             }
         }
         private void Events_OnOrder_Strategy_ToTrend(Order order)
@@ -474,32 +485,36 @@ namespace QUIKSharpTEST2
                     R = CreateStopOrder(pr, BuySel, Qnt); 
                 }
 
-                if (this.operation != Operation.Buy) return;
-                if (ListStopOrderSel.Count == 0 && R.State == State.Completed)
-                { 
-                    foreach (var i in Enumerable.Range(0, this.Levels))
+                if (this.operation == Operation.Buy)
+                {
+                    if (ListStopOrderSel.Count == 0 && R.State == State.Completed)
                     {
-                        var otstup = i == 0 ? CalclOtstup(R.ConditionPrice, this.Cels) : CalclOtstup(R.ConditionPrice, this.StepLevel);
-                        pr += otstup; 
-                        this.ListStopOrderSel.Add(CreateStopOrder(pr, this.operation));
+                        foreach (var i in Enumerable.Range(0, this.Levels))
+                        {
+                            var otstup = i == 0 ? CalclOtstup(R.ConditionPrice, this.Cels) : CalclOtstup(R.ConditionPrice, this.StepLevel);
+                            pr += otstup;
+                            this.ListStopOrderSel.Add(CreateStopOrder(pr, Operation.Sell));
+                        }
+                        //var ToBuySel = CalclOtstup(ListStopOrder[ListStopOrder.Count - 1].ConditionPrice, this.StepLevel) + this.Step;
+                        this.StopLoss = R.ConditionPrice;
+                        Log(StopLoss + "  " + " ПОКУПКА " + Qnt + " УСТАНОВЛЕНА СЕТКА");
                     }
-                    //var ToBuySel = CalclOtstup(ListStopOrder[ListStopOrder.Count - 1].ConditionPrice, this.StepLevel) + this.Step;
-                    this.StopLoss = R.ConditionPrice;
-                    Log(StopLoss + "  " + " ПОКУПКА " + Qnt + " УСТАНОВЛЕНА СЕТКА"); 
                 }
 
-                if (this.operation != Operation.Sell) return;
-                if (ListStopOrderBuy.Count == 0 && R.State == State.Completed)
+                if (this.operation == Operation.Sell)
                 {
-                    foreach (var i in Enumerable.Range(0, this.Levels))
+                    if (ListStopOrderBuy.Count == 0 && R.State == State.Completed)
                     {
-                        var otstup = i == 0 ? CalclOtstup(R.ConditionPrice, this.Cels) : CalclOtstup(R.ConditionPrice, this.StepLevel);
-                        pr -= otstup; 
-                        this.ListStopOrderBuy.Add(CreateStopOrder(pr, this.operation));
+                        foreach (var i in Enumerable.Range(0, this.Levels))
+                        {
+                            var otstup = i == 0 ? CalclOtstup(R.ConditionPrice, this.Cels) : CalclOtstup(R.ConditionPrice, this.StepLevel);
+                            pr -= otstup;
+                            this.ListStopOrderBuy.Add(CreateStopOrder(pr, Operation.Buy));
+                        }
+                        //var ToBuySel = CalclOtstup(ListStopOrder[ListStopOrder.Count - 1].ConditionPrice, this.StepLevel) + this.Step;
+                        this.StopLoss = R.ConditionPrice;
+                        Log(StopLoss + "  " + " ПОКУПКА " + Qnt + " УСТАНОВЛЕНА СЕТКА");
                     }
-                    //var ToBuySel = CalclOtstup(ListStopOrder[ListStopOrder.Count - 1].ConditionPrice, this.StepLevel) + this.Step;
-                    this.StopLoss = R.ConditionPrice;
-                    Log(StopLoss + "  " + " ПОКУПКА " + Qnt + " УСТАНОВЛЕНА СЕТКА");
                 }
             }
 
@@ -518,8 +533,9 @@ namespace QUIKSharpTEST2
                         this.ListStopOrderBuy.Count == 0 &&
                         this.LastPrice > StopLoss + CalclOtstup(StopLoss, this.StepLevel) * this.Levels)
                     {
-                        SetUpNetwork();
-                        Log("СРАБОТАЛ SetUpNetwork " + this.SecurityCode);
+                        SetNet(this.LastPrice, this.operation);
+                        //SetUpNetwork();
+                        //Log("СРАБОТАЛ SetUpNetwork " + this.SecurityCode);
                     }
                     //добавление СтопОрдеров
                     if (this.ListStopOrderBuy.Count > 0 &&
@@ -549,7 +565,8 @@ namespace QUIKSharpTEST2
                         this.ListStopOrderSel.Count == 0 &&
                         this.LastPrice < StopLoss - CalclOtstup(StopLoss, this.StepLevel) * this.Levels)
                     {
-                        SetUpNetwork();
+                        SetNet(this.LastPrice, this.operation);
+                        //SetUpNetwork();
                         Log("СРАБОТАЛ SetUpNetwork " + this.SecurityCode);
                     }
                     //добавление СтопОрдеров
@@ -689,32 +706,65 @@ namespace QUIKSharpTEST2
                 //Вызов this.ListStopOrder.ToList() копирует значения this.ListStopOrder в 
                 //отдельный список в начале foreach. Больше ничто не имеет доступа к этому 
                 //списку(у него даже нет имени переменной!), Поэтому ничто не может 
-                //изменить его внутри цикла.
-                foreach (var spOrder in this.ListStopOrderBuy.ToList())
+                //изменить его внутри цикла. 
+                if (operation == Operation.Buy)
                 {
-                    if (order.TransID == spOrder.TransId && order.State == State.Completed)
+                    foreach (var i in this.ListStopOrderBuy.ToList())
                     {
-                        this.ListStopOrderBuy.Remove(spOrder);
-                        cel = ClassCode == "SPBFUT" ? cel = this.Cels : cel = CalclOtstup(spOrder.ConditionPrice, this.Cels);
-                        Operation op = this.operation == Operation.Buy ? op = Operation.Sell : op = Operation.Buy;
-                        price = this.operation == Operation.Buy ? order.Price + cel : order.Price - cel;
-                        this.ListStopOrderSel.Add(CreateStopOrder(price, op));
-                        Log("ВЫСТАВЛЕН ОРДЕР НА "+ op + " по цене: " + price + " " + SecurityCode);
+                        if (order.TransID == i.TransId && order.State == State.Completed)
+                        {
+                            this.ListStopOrderBuy.Remove(i);
+                            cel = ClassCode == "SPBFUT" ? cel = this.Cels : cel = CalclOtstup(i.ConditionPrice, this.Cels);
+                            Operation op = this.operation == Operation.Buy ? op = Operation.Sell : op = Operation.Buy;
+                            price = this.operation == Operation.Buy ? i.ConditionPrice + cel : i.ConditionPrice - cel;
+                            this.ListStopOrderSel.Add(CreateStopOrder(price, op));
+                            Log("ВЫСТАВЛЕН ОРДЕР НА " + op + " по цене: " + price + " " + SecurityCode);
+                        }
+                    }
+
+                    foreach (var i in this.ListStopOrderSel.ToList())
+                    {
+                        if (order.TransID == i.TransId && order.State == State.Completed)
+                        {
+                            this.ListStopOrderSel.Remove(i);
+                            //cel = ClassCode == "SPBFUT" ? cel = this.Cels : cel = CalclOtstup(i.ConditionPrice, this.Cels);
+                            //Operation op = this.operation == Operation.Buy ? op = Operation.Sell : op = Operation.Buy;
+                            //price = this.operation == Operation.Buy ? i.ConditionPrice + cel : i.ConditionPrice - cel;
+                            //this.ListStopOrderBuy.Add(CreateStopOrder(price, op));
+                            //Log("ВЫСТАВЛЕН ОРДЕР НА " + op + " по цене: " + price + " " + SecurityCode);
+                        }
+                    }
+
+                }
+            }
+            if (operation == Operation.Sell)
+            {
+                foreach (var i in this.ListStopOrderBuy.ToList())
+                {
+                    if (order.TransID == i.TransId && order.State == State.Completed)
+                    {
+                        this.ListStopOrderBuy.Remove(i);
+                        //cel = ClassCode == "SPBFUT" ? cel = this.Cels : cel = CalclOtstup(i.ConditionPrice, this.Cels);
+                        //Operation op = this.operation == Operation.Buy ? op = Operation.Sell : op = Operation.Buy;
+                        //price = this.operation == Operation.Buy ? i.ConditionPrice + cel : i.ConditionPrice - cel;
+                        //this.ListStopOrderSel.Add(CreateStopOrder(price, op));
+                        //Log("ВЫСТАВЛЕН ОРДЕР НА " + op + " по цене: " + price + " " + SecurityCode);
                     }
                 }
 
-                foreach (var spOrder in this.ListStopOrderSel.ToList())
+                foreach (var i in this.ListStopOrderSel.ToList())
                 {
-                    if (order.TransID == spOrder.TransId && order.State == State.Completed)
+                    if (order.TransID == i.TransId && order.State == State.Completed)
                     {
-                        this.ListStopOrderSel.Remove(spOrder);
-                        cel = ClassCode == "SPBFUT" ? cel = this.Cels : cel = CalclOtstup(spOrder.ConditionPrice, this.Cels);
+                        this.ListStopOrderSel.Remove(i);
+                        cel = ClassCode == "SPBFUT" ? cel = this.Cels : cel = CalclOtstup(i.ConditionPrice, this.Cels);
                         Operation op = this.operation == Operation.Buy ? op = Operation.Sell : op = Operation.Buy;
-                        price = this.operation == Operation.Buy ? order.Price + cel : order.Price - cel;
+                        price = this.operation == Operation.Buy ? i.ConditionPrice + cel : i.ConditionPrice - cel;
                         this.ListStopOrderBuy.Add(CreateStopOrder(price, op));
                         Log("ВЫСТАВЛЕН ОРДЕР НА " + op + " по цене: " + price + " " + SecurityCode);
                     }
                 }
+
             }
         }
 
@@ -731,41 +781,59 @@ namespace QUIKSharpTEST2
             //
             // } 
         }
-        private ObservableCollection<StopOrder> SetUpNetwork()
+        void SetNet(decimal _pr, Operation _op)
         {
-            //this.ListTransID = new List<long>();
-            bool flag = true;
-            decimal otstup = 0;
-            decimal pr = this.lastPrice;
-
-            if (operation == Operation.Buy)
+            ObservableCollection<StopOrder> List = [];
+            List = operation == Operation.Buy ? ListStopOrderBuy : ListStopOrderSel;
+            decimal otstup = 0; decimal IndexOtstup;
+            KillOperationOrders();
+            otstup = CalclOtstup(_pr, this.StepLevel);
+            foreach (var i in Enumerable.Range(0, this.Levels))
             {
-                otstup = CalclOtstup(pr, this.StepLevel);
-                foreach (var i in Enumerable.Range(0, this.Levels))
-                {
-                    pr = i == 0 ? pr : pr -= otstup;
-                    this.ListStopOrderBuy.Add(CreateStopOrder(pr, this.operation));
-                }
-                var IndexOtstup = CalclOtstup(ListStopOrderBuy[ListStopOrderBuy.Count - 1].ConditionPrice, this.StepLevel) + this.Step;
-                this.StopLoss = ListStopOrderBuy[ListStopOrderBuy.Count - 1].ConditionPrice - IndexOtstup;
-                Log("СРАБОТАЛ SetUpNetwork " + this.SecurityCode);
+                if (i != 0 || this.StopLoss != 0) _pr = operation == Operation.Buy ? _pr -= otstup : _pr += otstup; 
+                List.Add(CreateStopOrder(_pr, _op)); 
             }
+            IndexOtstup = CalclOtstup(List[List.Count - 1].ConditionPrice, this.StepLevel) + this.Step;
+            this.StopLoss = operation == Operation.Buy ? List[List.Count - 1].ConditionPrice - IndexOtstup : List[List.Count - 1].ConditionPrice + IndexOtstup;
 
-            if (operation == Operation.Sell)
-            {
-                otstup = CalclOtstup(pr, this.StepLevel);
-                foreach (var i in Enumerable.Range(0, this.Levels))
-                {
-                    pr = i == 0 ? pr : pr += otstup;
-                    this.ListStopOrderSel.Add(CreateStopOrder(pr, this.operation));
-                } 
-                var IndexOtstup = CalclOtstup(ListStopOrderSel[ListStopOrderSel.Count - 1].ConditionPrice, this.StepLevel) + this.Step;
-                this.StopLoss = ListStopOrderSel[ListStopOrderSel.Count - 1].ConditionPrice - IndexOtstup;
-                Log("СРАБОТАЛ SetUpNetwork " + this.SecurityCode);
-            }
-
-            return this.operation == Operation.Buy? ListStopOrderBuy : ListStopOrderSel;
+            Log("СРАБОТАЛ SetNet " + this.SecurityCode + ",  StopLoss =" + this.StopLoss);
         }
+
+        //private ObservableCollection<StopOrder> SetUpNetwork()
+        //{
+        //    //this.ListTransID = new List<long>();
+        //    bool flag = true;
+        //    decimal otstup = 0;
+        //    decimal pr = this.lastPrice;
+
+        //    if (operation == Operation.Buy)
+        //    {
+        //        otstup = CalclOtstup(pr, this.StepLevel);
+        //        foreach (var i in Enumerable.Range(0, this.Levels))
+        //        {
+        //            pr = i == 0 ? pr : pr -= otstup;
+        //            this.ListStopOrderBuy.Add(CreateStopOrder(pr, this.operation));
+        //        }
+        //        var IndexOtstup = CalclOtstup(ListStopOrderBuy[ListStopOrderBuy.Count - 1].ConditionPrice, this.StepLevel) + this.Step;
+        //        this.StopLoss = ListStopOrderBuy[ListStopOrderBuy.Count - 1].ConditionPrice - IndexOtstup;
+        //        Log("СРАБОТАЛ SetUpNetwork " + this.SecurityCode);
+        //    }
+
+        //    if (operation == Operation.Sell)
+        //    {
+        //        otstup = CalclOtstup(pr, this.StepLevel);
+        //        foreach (var i in Enumerable.Range(0, this.Levels))
+        //        {
+        //            pr = i == 0 ? pr : pr += otstup;
+        //            this.ListStopOrderSel.Add(CreateStopOrder(pr, this.operation));
+        //        } 
+        //        var IndexOtstup = CalclOtstup(ListStopOrderSel[ListStopOrderSel.Count - 1].ConditionPrice, this.StepLevel) + this.Step;
+        //        this.StopLoss = ListStopOrderSel[ListStopOrderSel.Count - 1].ConditionPrice - IndexOtstup;
+        //        Log("СРАБОТАЛ SetUpNetwork " + this.SecurityCode);
+        //    }
+
+        //    return this.operation == Operation.Buy? ListStopOrderBuy : ListStopOrderSel;
+        //}
 
         private StopOrder CreateStopOrder(decimal pr, Operation BuySel, int _quantity = 0)
         {
@@ -815,17 +883,24 @@ namespace QUIKSharpTEST2
             var orders =   _quik.Orders.GetOrders(this.ClassCode, this.SecurityCode).Result;
             foreach (var order in orders.Where(order => order.State == State.Active))
             {
-                  _quik.Orders.KillOrder(order); 
+                foreach (var sord in this.ListStopOrderSel.ToList().SkipWhile(sord => sord.TransId != order.TransID))
+                {
+                    _quik.Orders.KillOrder(order);
+                }
+                foreach (var sord in this.ListStopOrderBuy.ToList().SkipWhile(sord => sord.TransId != order.TransID))
+                {
+                    _quik.Orders.KillOrder(order);
+                }
             } 
 
             var Stoporders = _quik.StopOrders.GetStopOrders(this.ClassCode, this.SecurityCode).Result;
             if (operation == Operation.Buy)
                 foreach (var stoporder in Stoporders.Where(stoporder =>
                          stoporder.State == State.Active
-                         && stoporder.Operation == this.operation//))
+                         && stoporder.Operation == this.operation))
                          //&& stoporder.FilledQuantity == stoporder.Quantity
                          //&& stoporder.FilledQuantity == 0))
-                         && (stoporder.Flags & 0x8000) == 0)) // (0x8000)  Идет расчет минимума-максимума 
+                         //&& (stoporder.Flags & 0x8000) == 0)) // (0x8000)  Идет расчет минимума-максимума 
                 { 
                     foreach (var s in this.ListStopOrderBuy.ToList().Where(s =>
                                 stoporder.TransId == s.TransId/* && (stoporder.Flags & 0x8000) != 0*/))
@@ -838,10 +913,10 @@ namespace QUIKSharpTEST2
             if (operation == Operation.Sell)
                 foreach (var stoporder in Stoporders.Where(stoporder =>
                          stoporder.State == State.Active
-                         && stoporder.Operation == this.operation//))
+                         && stoporder.Operation == this.operation))
                          //&& stoporder.FilledQuantity == stoporder.Quantity
                          //&& stoporder.FilledQuantity == 0))
-                         && (stoporder.Flags & 0x8000) == 0)) // (0x8000)  Идет расчет минимума-максимума 
+                         //&& (stoporder.Flags & 0x8000) == 0)) // (0x8000)  Идет расчет минимума-максимума 
                 {
                     foreach (var s in this.ListStopOrderSel.ToList().Where(s =>
                              stoporder.TransId == s.TransId/* && (stoporder.Flags & 0x8000) != 0*/))
@@ -857,9 +932,10 @@ namespace QUIKSharpTEST2
         public async Task KillAllOrders()
         {
             this.ListStopOrderBuy.Clear();
+            this.ListStopOrderSel.Clear();
             //this.Isactiv = false;
             this.StrategyFlag = false;
-            this.StopLoss = 0;
+            this.StopLoss = decimal.Zero;
 
             var orders = await _quik.Orders.GetOrders(this.ClassCode, this.SecurityCode).ConfigureAwait(true);
             if (orders.Count != 0)
@@ -930,7 +1006,7 @@ namespace QUIKSharpTEST2
         public Strategy Strategys // { get; set; } = Operation.Buy;
         {
             get => _strategys;
-            set => SetField(ref _strategys, value,null, SwitchStrategys(value));
+            set => SetField(ref _strategys, value,null, SwitchStrategys(value));//
         }
 
         /// <summary>
@@ -939,7 +1015,7 @@ namespace QUIKSharpTEST2
         public bool Isactiv
         {
             get => _isactiv;
-            set => SetField(ref _isactiv, value, null, Сheck_Isactiv(value)); 
+            set => SetField(ref _isactiv, value, null);// , Сheck_Isactiv(value)
         }
 
         /// <summary>

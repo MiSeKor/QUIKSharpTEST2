@@ -19,13 +19,12 @@ namespace QUIKSharpTEST2
 
         private ObservableCollection<Tool> _ListTools;
         private Tool _SelectedTool; 
-
         public ObservableCollection<Tool> ListTools
         {
             get => _ListTools;
             set => SetField(ref _ListTools, value);
         } 
-
+        
         #region SelectedItem
         public Tool SelectedTool
         {
@@ -52,15 +51,14 @@ namespace QUIKSharpTEST2
         }
         public void KillOperationOrders()
         {
-            _SelectedTool.Isactiv = false;
+            SelectedTool.Isactiv = false;
            // _SelectedTool.KillOperationOrders(); 
         }
         public void ClosPositions()
         {
-            _SelectedTool.Isactiv = false; 
-            _SelectedTool.CloseAllpositions();
-        }
-
+            SelectedTool.Isactiv = false;
+            SelectedTool.CloseAllpositions();
+        } 
         public class EnumToArrayConverter : IValueConverter
         {
             public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)

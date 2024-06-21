@@ -189,11 +189,7 @@ namespace QUIKSharpTEST2
         private void CloseApp(object sender, MouseButtonEventArgs e)
         {
             try
-            {
-                foreach (var t in MV.ListTools.Where(t=> t.ListStopOrderBuy.Count != 0))
-                {
-                    t.KillOperationOrders();
-                }
+            { 
                 Close();
             }
             catch (Exception exception)
@@ -218,5 +214,20 @@ namespace QUIKSharpTEST2
         {
             if(e.LeftButton == MouseButtonState.Pressed) DragMove();
         }
+
+        private void ToggleButton_OnChecked(object sender, RoutedEventArgs e)
+        {
+            
+        }
+
+        private void ButtonBase_OnClick(object sender, RoutedEventArgs e)
+        {
+            MV.SelectedTool.Сheck_Isactiv();
+        }
+
+        //private void ChekStrategys(object sender, SelectionChangedEventArgs e)
+        //{
+        //    MV.SelectedTool.Сheck();
+        //}
     }
 }

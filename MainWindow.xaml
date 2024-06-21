@@ -9,7 +9,7 @@
         d:DataContext="{d:DesignInstance Type=quikSharpTest2:MainVM}" 
         mc:Ignorable="d"
         WindowStartupLocation="CenterScreen" WindowStyle="None"
-        Title="TestQuik# v2" Height="325" Width="820" Loaded="MainWind_Loaded" Closed="MainWind_Closed" MouseDown="DragWindow">
+        Title="TestQuik# v2" Height="205" Width="820" Loaded="MainWind_Loaded" Closed="MainWind_Closed" MouseDown="DragWindow">
     <Window.Resources>
         <quikSharpTest2:EnumToArrayConverter x:Key="EnumToArrayConverter"/>
         <!--Create list of enumeration values-->
@@ -140,10 +140,37 @@
                                                 UpdateSourceTrigger=PropertyChanged}"
                                                 ItemsSource="{Binding 
                                                 Source={StaticResource MyEnumStrategy}}"
-                                                Width="60" />
+                                                Width="60" >
+                            <!--<DataGridComboBoxColumn.EditingElementStyle>
+                                <Style TargetType="ComboBox">
+                                    <EventSetter Event="SelectionChanged" Handler="ChekStrategys" />
+                                </Style>
+                            </DataGridComboBoxColumn.EditingElementStyle>-->
+                        </DataGridComboBoxColumn>
+                        <!--<DataGridTemplateColumn Header="123">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <ComboBox SelectedItem="{Binding Strategys,
+                                                UpdateSourceTrigger=PropertyChanged}"
+                                              ItemsSource="{Binding 
+                                                Source={StaticResource MyEnumStrategy}}"
+                                              Width="60" SelectionChanged="Selector_OnSelectionChanged" >  
+                                    </ComboBox>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>--> 
 
-                        <DataGridCheckBoxColumn Header="Isactiv" Width="45" Binding="{Binding Isactiv, 
-                                                UpdateSourceTrigger=PropertyChanged}" IsReadOnly="False"/>
+                        <DataGridTemplateColumn Header="Isactiv">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate> <!--этот чекбокс изменяется с одного клика-->
+                                    <CheckBox Click="ButtonBase_OnClick" HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="{Binding Isactiv, UpdateSourceTrigger=PropertyChanged}" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+
+                        <!--<DataGridCheckBoxColumn Header="Isactiv" Width="45" Binding="{Binding Isactiv, 
+                                                UpdateSourceTrigger=PropertyChanged}" IsReadOnly="False"/>-->
                         <DataGridTextColumn Header="Tool" IsReadOnly="True" Width="60" Binding="{Binding SecurityCode}"/>
                         <DataGridTextColumn Header="LastPrise" IsReadOnly="True" Width="*" Binding="{Binding LastPrice}"/>
                         <DataGridTextColumn Header="Positions" IsReadOnly="True" Width="60" Binding="{Binding Positions}"/>
@@ -164,23 +191,25 @@
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
                                         <TextBlock Grid.Column="0" Text="{Binding ListStopOrderBuy.Count, 
-                                                UpdateSourceTrigger=PropertyChanged}" TextAlignment="Center"/>
-                                        <TextBlock Grid.Column="1" Text="{Binding ListStopOrderSel.Count, 
-                                                UpdateSourceTrigger=PropertyChanged}" TextAlignment="Center"/>
+                                                UpdateSourceTrigger=PropertyChanged}" TextAlignment="Right"/>
+                                        <TextBlock Grid.Column="1">/</TextBlock>
+                                        <TextBlock Grid.Column="2" Text="{Binding ListStopOrderSel.Count, 
+                                                UpdateSourceTrigger=PropertyChanged}" TextAlignment="Left"/>
                                     </Grid>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
 
-                        <DataGridTemplateColumn Header="ClosOrd" Width="60">
+                        <!--<DataGridTemplateColumn Header="ClosOrd" Width="60">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <Button Click="KillOperationOrders" Content="ClosOrd" ToolTip="Закроет все ордеры по направлению this.operation"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
+                        </DataGridTemplateColumn>-->
 
                         <DataGridTemplateColumn Header="ClosPosit" Width="60">
                             <DataGridTemplateColumn.CellTemplate>

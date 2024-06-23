@@ -9,7 +9,7 @@
         d:DataContext="{d:DesignInstance Type=quikSharpTest2:MainVM}" 
         mc:Ignorable="d"
         WindowStartupLocation="CenterScreen" WindowStyle="None"
-        Title="TestQuik# v2" Height="205" Width="820" Loaded="MainWind_Loaded" Closed="MainWind_Closed" MouseDown="DragWindow">
+        Title="TestQuik# v2" Height="205" Width="790" Loaded="MainWind_Loaded" Closed="MainWind_Closed" MouseDown="DragWindow" SizeToContent="Height">
     <Window.Resources>
         <quikSharpTest2:EnumToArrayConverter x:Key="EnumToArrayConverter"/>
         <!--Create list of enumeration values-->
@@ -27,23 +27,22 @@
         <!-- https://www.youtube.com/watch?v=mxIiWp9wxSo&t=625s -->
         <Style x:Key="datag1" TargetType="DataGrid">
             <Setter Property="ColumnHeaderStyle" Value="{DynamicResource chs1}"></Setter>
-            <Setter Property="CellStyle" Value="{DynamicResource chs2}"></Setter>
-        </Style>
+            <Setter Property="CellStyle" Value="{DynamicResource chs2}"></Setter> 
+        </Style> 
+
         <Style x:Key="chs1" TargetType="DataGridColumnHeader">
             <Setter Property="Background" Value="Gray"></Setter>
             <Setter Property="Foreground" Value="Black"></Setter>
             <Setter Property="FontWeight" Value="Bold"></Setter>
             <Setter Property="Padding" Value="1"></Setter>
             <Setter Property="BorderBrush" Value="Black"></Setter>
-            <Setter Property="BorderThickness" Value="0.5"></Setter>
-
+            <Setter Property="BorderThickness" Value="0.5"></Setter> 
             <Setter Property="HorizontalContentAlignment" Value="Center"></Setter>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="ToolTip" Value="ToolTip какойто отстойный"></Setter>
-                    <Setter Property="Background" Value="SlateGray"></Setter>
-
-                </Trigger>
+                    <!--<Setter Property="ToolTip" Value="ToolTip какойто отстойный"></Setter>-->
+                    <Setter Property="Background" Value="AliceBlue"></Setter> 
+                </Trigger> 
             </Style.Triggers>
         </Style>
         <Style x:Key="chs2" TargetType="DataGridCell">
@@ -51,13 +50,12 @@
             <Setter Property="Foreground" Value="Blue"></Setter>
             <Setter Property="FontWeight" Value="Bold"></Setter>
             <Setter Property="Padding" Value="1"></Setter>  
-            <Setter Property="TextBlock.TextAlignment" Value="Center" /> 
+            <Setter Property="TextBlock.TextAlignment" Value="Center" />
+            <Setter Property="ToolTip" Value="{Binding Name}"></Setter> 
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="ToolTip" Value="ToolTip какойто отстойный"></Setter>
-                    <Setter Property="Background" Value="Aqua"></Setter>
-
-                </Trigger>
+                    <Setter Property="Background" Value="Aqua"></Setter> 
+                </Trigger> 
             </Style.Triggers>
         </Style>
         <!-- https://www.youtube.com/watch?v=wN1Mx2U8_5s - там много интересного-->
@@ -65,7 +63,7 @@
             <Setter Property="Background" Value="Aqua"></Setter> 
         </Style>
         <Style TargetType="Button" BasedOn="{StaticResource BaseButton}"></Style>
-
+ 
         <!--<Style TargetType="Button" x:Key="RedButton">
             <Setter Property="Background" Value="Red"></Setter>
         </Style>-->
@@ -108,7 +106,7 @@
                 </Button>
                 <TextBox Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Left" Name="txBoxAddTool" Margin="25,0,15,0" FontSize="14" FontWeight="Bold" Width="120"></TextBox>
                 <TextBlock Grid.Column="1" FontSize="14" FontWeight="Bold" HorizontalAlignment="Left">
-                    <Run>Выбрано:</Run> 
+                    <!--<Run>Выбрано:</Run>--> 
                     <Run Text="{Binding SelectedTool.Name}"></Run> 
                     <Run xml:space="preserve">  SecurityCode:</Run>
                     <Run Text="{Binding SelectedTool.SecurityCode}"></Run>
@@ -130,21 +128,21 @@
             <StackPanel Margin="0,5,0,0">
                 <DataGrid Name="DataGrid1" ItemsSource="{Binding ListTools}" AutoGenerateColumns="False" 
                                                 SelectedItem="{Binding SelectedTool}"
-                                                Margin="0,10,0,10" Grid.Row="1"
+                                                Margin="0,5,0,10" Grid.Row="1"
                                                 Style="{DynamicResource datag1}">
                     <DataGrid.Columns>
 
-                        <DataGridComboBoxColumn Header="Operation" SelectedItemBinding="{Binding operation,
+                        <DataGridComboBoxColumn Header="Operat" SelectedItemBinding="{Binding operation,
                                                 UpdateSourceTrigger=PropertyChanged}"
                                                 ItemsSource="{Binding 
                                                 Source={StaticResource MyEnumOperation}}"
-                                                Width="65" />
+                                                Width="Auto" />
 
                         <DataGridComboBoxColumn Header="Strategy" SelectedItemBinding="{Binding Strategys,
                                                 UpdateSourceTrigger=PropertyChanged}"
                                                 ItemsSource="{Binding 
                                                 Source={StaticResource MyEnumStrategy}}"
-                                                Width="60" >
+                                                Width="Auto" >
                             <!--<DataGridComboBoxColumn.EditingElementStyle>
                                 <Style TargetType="ComboBox">
                                     <EventSetter Event="SelectionChanged" Handler="ChekStrategys" />
@@ -167,7 +165,7 @@
                         <DataGridTemplateColumn Header="Isactiv">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate> <!--этот чекбокс изменяется с одного клика-->
-                                    <CheckBox Click="ButtonBase_OnClick" HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="{Binding Isactiv, UpdateSourceTrigger=PropertyChanged}" />
+                                    <CheckBox HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="{Binding Isactiv, UpdateSourceTrigger=PropertyChanged}" />
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
@@ -180,8 +178,8 @@
                         <DataGridTextColumn Header="Positions" IsReadOnly="True" Width="60" Binding="{Binding Positions}"/>
                         <DataGridTextColumn Header="Levels" Width="45" Binding="{Binding Levels}"/>
                         <DataGridTextColumn Header="StepLevel" Width="60" Binding="{Binding StepLevel}"/>
-                        <DataGridTextColumn Header="Cels" Width="35" Binding="{Binding Cels}"/>
-                        <DataGridTextColumn Header="Quantity" Width="60" Binding="{Binding Quantity}"/>
+                        <DataGridTextColumn Header="Cels" Width="Auto" Binding="{Binding Cels}"/>
+                        <DataGridTextColumn Header="Quantity" Width="60" Binding="{Binding Quantity}"/> 
                         <!--<DataGridTextColumn Header="StpOrd" IsReadOnly="True" Width="70" 
                                             Binding="{Binding ListStopOrder.Count, 
                                                 UpdateSourceTrigger=PropertyChanged}"/>-->
@@ -229,7 +227,7 @@
                                     <Button Click="Button_Remove_Tool_OnClick" Content="X" ToolTip="Удалить из списка и отписаться от всех событий">
                                         <Button.Style>
                                             <Style TargetType="Button">
-                                                <Setter Property="Background" Value="Red"/>
+                                                <Setter Property="Background" Value="Red"/>                                                
                                             </Style>
                                         </Button.Style>
                                     </Button>

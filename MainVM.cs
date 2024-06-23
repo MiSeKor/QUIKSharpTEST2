@@ -17,7 +17,7 @@ namespace QUIKSharpTEST2
     {
         //MainWindow wnd = (MainWindow)App.Current.MainWindow; 
 
-        private ObservableCollection<Tool> _ListTools;
+        private ObservableCollection<Tool> _ListTools = [];
         private Tool _SelectedTool; 
         public ObservableCollection<Tool> ListTools
         {

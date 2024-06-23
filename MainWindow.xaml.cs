@@ -32,12 +32,12 @@ namespace QUIKSharpTEST2
         //
         public Quik _quik;
         private readonly string Path = $"{Environment.CurrentDirectory}\\ListTools.json";
-        //private СlassSaveLoad СlassSaveLoadFiles;
-        //public BindingList<Tool> toolList;
+        private СlassSaveLoad СlassSaveLoadFiles;
+        //public List<Tool> toolList = [];
 
         //private Tool Sber, Vtbr, Rosn; 
         //private Tool _tool;
-         
+
         private MainVM MV = new(); 
         public MainWindow()
         {
@@ -53,27 +53,26 @@ namespace QUIKSharpTEST2
 
         private void MainWind_Loaded(object sender, RoutedEventArgs e)
         {
-            СreateQuik(); 
-            MV.ListTools = [AddTool("SBER"), AddTool("VTBR"), AddTool("RUAL"), AddTool("GDM4")];
+            СreateQuik();
+            //MV.ListTools = [AddTool("SBER"), AddTool("VTBR"), AddTool("RUAL"), AddTool("GDM4")];
 
             //
-            //СlassSaveLoadFiles = new СlassSaveLoad(Path);
+            СlassSaveLoadFiles = new СlassSaveLoad(Path);
 
             try
             {
-               // toolList = new BindingList<Tool>();
-                // var Lst = new List<string>();
-                //
-                // using (var reader = File.OpenText(Path))
-                // {
-                //     var Files = reader.ReadToEnd();
-                //     Lst = JsonConvert.DeserializeObject<List<string>>(Files);
-                // }
-                // MV = new MainVM( );
-                // foreach (var i in Lst)
-                // {
-                //     toolList.Add(new Tool(_quik, i));
-                // }
+                List<string> Lst = [];
+
+                using (var reader = File.OpenText(Path))
+                {
+                    var Files = reader?.ReadToEnd();
+                    Lst = JsonConvert.DeserializeObject<List<string>>(Files);
+                }
+                //MV = new MainVM();
+                foreach (var i in Lst)
+                {
+                    MV.ListTools.Add(new Tool(_quik, i));
+                }
 
             }
             catch (Exception ex)
@@ -115,17 +114,18 @@ namespace QUIKSharpTEST2
             }*/
 
             //_quik.StopService();
-            // var Lst = new List<string>();
-            // foreach (var item in toolList)
-            // {
-            //     Lst.Add(item.SecurityCode);
-            // }
-            // using (StreamWriter writer = File.CreateText(Path))
-            // {
-            //     string output = JsonConvert.SerializeObject(Lst); 
-            //     writer.WriteLine(output);
-            // }
-            //СlassSaveLoadFiles.SaveData(toolList); 
+            var Lst = new List<string>();
+            foreach (var item in MV.ListTools)
+            {
+                Lst.Add(item.SecurityCode);
+            }
+            using (StreamWriter writer = File.CreateText(Path))
+            {
+                string output = JsonConvert.SerializeObject(Lst);
+                writer.WriteLine(output);
+            }
+            //СlassSaveLoadFiles.SaveData(toolList);
+            СlassSaveLoadFiles.SaveData(Lst);
         }
 
         private void KillOperationOrders(object sender, RoutedEventArgs e)
@@ -215,15 +215,15 @@ namespace QUIKSharpTEST2
             if(e.LeftButton == MouseButtonState.Pressed) DragMove();
         }
 
-        private void ToggleButton_OnChecked(object sender, RoutedEventArgs e)
-        {
+        //private void ToggleButton_OnChecked(object sender, RoutedEventArgs e)
+        //{
             
-        }
+        //}
 
-        private void ButtonBase_OnClick(object sender, RoutedEventArgs e)
-        {
-            MV.SelectedTool.Сheck_Isactiv();
-        }
+        //private void ButtonBase_OnClick(object sender, RoutedEventArgs e)
+        //{
+        //    MV.SelectedTool.Сheck_Isactiv();
+        //}
 
         //private void ChekStrategys(object sender, SelectionChangedEventArgs e)
         //{

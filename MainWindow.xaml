@@ -126,10 +126,11 @@
             </Grid>
 
             <StackPanel Margin="0,5,0,0">
-                <DataGrid Name="DataGrid1" ItemsSource="{Binding ListTools}" AutoGenerateColumns="False" 
+                <DataGrid x:Name="DataGrid1" ItemsSource="{Binding ListTools}" AutoGenerateColumns="False" 
                                                 SelectedItem="{Binding SelectedTool}"
                                                 Margin="0,5,0,10" Grid.Row="1"
-                                                Style="{DynamicResource datag1}">
+                                                Style="{DynamicResource datag1}"
+                                                BeginningEdit="DataGrid1_OnBeginningEdit">
                     <DataGrid.Columns>
 
                         <DataGridComboBoxColumn Header="Operat" SelectedItemBinding="{Binding operation,

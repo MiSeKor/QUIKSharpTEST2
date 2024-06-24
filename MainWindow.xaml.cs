@@ -38,11 +38,11 @@ namespace QUIKSharpTEST2
         //private Tool Sber, Vtbr, Rosn; 
         //private Tool _tool;
 
-        private MainVM MV = new(); 
+        private MainVM VM = new(); 
         public MainWindow()
         {
             InitializeComponent();
-            DataContext = MV;
+            DataContext = VM;
         }
 
         public Tool AddTool(string SecKod)
@@ -71,7 +71,7 @@ namespace QUIKSharpTEST2
                 //MV = new MainVM();
                 foreach (var i in Lst)
                 {
-                    MV.ListTools.Add(new Tool(_quik, i));
+                    VM.ListTools.Add(new Tool(_quik, i));
                 }
 
             }
@@ -115,7 +115,7 @@ namespace QUIKSharpTEST2
 
             //_quik.StopService();
             var Lst = new List<string>();
-            foreach (var item in MV.ListTools)
+            foreach (var item in VM.ListTools)
             {
                 Lst.Add(item.SecurityCode);
             }
@@ -130,11 +130,11 @@ namespace QUIKSharpTEST2
 
         private void KillOperationOrders(object sender, RoutedEventArgs e)
         {
-            MV.KillOperationOrders();
+            VM.KillOperationOrders();
         }
         private void ClosPositions(object sender, RoutedEventArgs e)
         {
-            MV.ClosPositions();
+            VM.ClosPositions();
         }
 
         void Demonsracia(object sender, RoutedEventArgs e)
@@ -147,7 +147,7 @@ namespace QUIKSharpTEST2
         {
             if (txBoxAddTool.Text != "")
             {
-                MV.ListTools.Add(AddTool(txBoxAddTool.Text));
+                VM.ListTools.Add(AddTool(txBoxAddTool.Text));
                 txBoxAddTool.Text = "";
             }
         }
@@ -183,7 +183,7 @@ namespace QUIKSharpTEST2
 
         private void Button_Remove_Tool_OnClick(object sender, RoutedEventArgs e)
         {
-            MV.Remove();
+            VM.Remove();
         }
 
         private void CloseApp(object sender, MouseButtonEventArgs e)
@@ -229,5 +229,9 @@ namespace QUIKSharpTEST2
         //{
         //    MV.SelectedTool.Сheck();
         //}
+        private void DataGrid1_OnBeginningEdit(object sender, DataGridBeginningEditEventArgs e)
+        {
+            if (VM.SelectedTool.Isactiv) e.Cancel = true;
+        }
     }
 }

@@ -356,7 +356,7 @@ namespace QUIKSharpTEST2
                         this.LastPrice > this.ListStopOrderBuy[0].ConditionPrice
                         + CalclOtstup(this.ListStopOrderBuy[0].ConditionPrice, this.Cels + this.StepLevel))
                     {
-                        if (this.ListStopOrderBuy.Count == 0) otstup = this.Cels;
+                        if (this.ListStopOrderBuy.Count >= 0 && this.StopLoss !=  decimal.Zero) otstup = this.Cels;
                         SetNet(this.LastPrice - otstup, this.operation);
                         
                     }
@@ -376,7 +376,7 @@ namespace QUIKSharpTEST2
                         this.LastPrice < this.ListStopOrderSel[0].ConditionPrice
                         - CalclOtstup(this.ListStopOrderSel[0].ConditionPrice, this.Cels + this.StepLevel))
                     {
-                        if (this.ListStopOrderSel.Count == 0) otstup = this.Cels;
+                        if (this.ListStopOrderSel.Count >= 0 && this.StopLoss != decimal.Zero) otstup = this.Cels;
                         SetNet(this.LastPrice + otstup, this.operation);
                         
                     }

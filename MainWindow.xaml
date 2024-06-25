@@ -104,7 +104,7 @@
                         </ControlTemplate>
                     </Button.Template>
                 </Button>
-                <TextBox Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Left" Name="txBoxAddTool" Margin="25,0,15,0" FontSize="14" FontWeight="Bold" Width="120"></TextBox>
+                <TextBox Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Left" ToolTip="Для добавления нового Tool нужно ввести его SecurityCode и нажать зеленую кнопку" Name="txBoxAddTool" Margin="25,0,15,0" FontSize="14" FontWeight="Bold" Width="120"></TextBox>
                 <TextBlock Grid.Column="1" FontSize="14" FontWeight="Bold" HorizontalAlignment="Left">
                     <!--<Run>Выбрано:</Run>--> 
                     <Run Text="{Binding SelectedTool.Name}"></Run> 
@@ -132,6 +132,15 @@
                                                 Style="{DynamicResource datag1}"
                                                 BeginningEdit="DataGrid1_OnBeginningEdit">
                     <DataGrid.Columns>
+                         
+                        <DataGridTemplateColumn Header="Isactiv">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <!--этот чекбокс изменяется с одного клика-->
+                                    <CheckBox HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="{Binding Isactiv, UpdateSourceTrigger=PropertyChanged}" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
 
                         <DataGridComboBoxColumn Header="Operat" SelectedItemBinding="{Binding operation,
                                                 UpdateSourceTrigger=PropertyChanged}"
@@ -161,16 +170,7 @@
                                     </ComboBox>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>--> 
-
-                        <DataGridTemplateColumn Header="Isactiv">
-                            <DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate> <!--этот чекбокс изменяется с одного клика-->
-                                    <CheckBox HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="{Binding Isactiv, UpdateSourceTrigger=PropertyChanged}" />
-                                </DataTemplate>
-                            </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
-
+                        </DataGridTemplateColumn>-->  
 
                         <!--<DataGridCheckBoxColumn Header="Isactiv" Width="45" Binding="{Binding Isactiv, 
                                                 UpdateSourceTrigger=PropertyChanged}" IsReadOnly="False"/>-->

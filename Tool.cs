@@ -344,21 +344,20 @@ namespace QUIKSharpTEST2
 
         private void Events_OnParam_Strategy_MoveNet(Param par)
         {
-            int index = 3; decimal otstup = 0;
+            int index = 2; decimal otstup = 0;
             if (par.SecCode == SecurityCode && Isactiv)
             { 
                 if (operation == Operation.Buy)
                 {
                     if (StopLoss == decimal.Zero ||
                         this.ListStopOrderBuy.Count == 0 &&
-                        this.LastPrice > StopLoss + CalclOtstup(StopLoss, this.StepLevel) * index ||
+                        this.LastPrice > StopLoss + CalclOtstup(StopLoss, this.Cels + this.StepLevel) ||
                         this.ListStopOrderBuy.Count > 0 &&
                         this.LastPrice > this.ListStopOrderBuy[0].ConditionPrice
-                        + CalclOtstup(this.ListStopOrderBuy[0].ConditionPrice, this.StepLevel) * index)
-                    { 
-                        //if (this.ListStopOrderBuy.Count == 0)
-                        //{}
-                            SetNet(this.LastPrice, this.operation);
+                        + CalclOtstup(this.ListStopOrderBuy[0].ConditionPrice, this.Cels + this.StepLevel))
+                    {
+                        if (this.ListStopOrderBuy.Count == 0) otstup = this.Cels;
+                        SetNet(this.LastPrice - otstup, this.operation);
                         
                     }
                     // СТОП УБЫТКА = StopLoss
@@ -372,14 +371,13 @@ namespace QUIKSharpTEST2
                 {
                     if (StopLoss == decimal.Zero ||
                         this.ListStopOrderSel.Count == 0 &&
-                        this.LastPrice < StopLoss - CalclOtstup(StopLoss, this.StepLevel) * index ||
+                        this.LastPrice < StopLoss - CalclOtstup(StopLoss, this.Cels + this.StepLevel) ||
                         this.ListStopOrderSel.Count > 0 &&
                         this.LastPrice < this.ListStopOrderSel[0].ConditionPrice
-                        - CalclOtstup(this.ListStopOrderSel[0].ConditionPrice, this.StepLevel) * index)
+                        - CalclOtstup(this.ListStopOrderSel[0].ConditionPrice, this.Cels + this.StepLevel))
                     {
-                        //if (this.ListStopOrderSel.Count == 0)
-                        //{}
-                            SetNet(this.LastPrice, this.operation);
+                        if (this.ListStopOrderSel.Count == 0) otstup = this.Cels;
+                        SetNet(this.LastPrice + otstup, this.operation);
                         
                     }
                     // СТОП УБЫТКА = StopLoss
@@ -733,7 +731,7 @@ namespace QUIKSharpTEST2
         {
             ObservableCollection<StopOrder> List = [];
             List = operation == Operation.Buy ? ListStopOrderBuy : ListStopOrderSel;
-            decimal otstup = 0; decimal IndexOtstup;
+            decimal otstup = 0;/* decimal IndexOtstup;*/
             KillOperationOrders();
             otstup = CalclOtstup(_pr, this.StepLevel);
             foreach (var i in Enumerable.Range(0, this.Levels))
@@ -741,8 +739,8 @@ namespace QUIKSharpTEST2
                 if (i != 0 || this.StopLoss != 0) _pr = operation == Operation.Buy ? _pr -= otstup : _pr += otstup; 
                 List.Add(CreateStopOrder(_pr, _op)); 
             }
-            IndexOtstup = CalclOtstup(List[List.Count - 1].ConditionPrice, this.StepLevel) + this.Step;
-            this.StopLoss = operation == Operation.Buy ? List[List.Count - 1].ConditionPrice - IndexOtstup : List[List.Count - 1].ConditionPrice + IndexOtstup;
+            otstup = CalclOtstup(List[List.Count - 1].ConditionPrice, this.StepLevel) + this.Step;
+            this.StopLoss = operation == Operation.Buy ? List[List.Count - 1].ConditionPrice - otstup : List[List.Count - 1].ConditionPrice + otstup;
 
             Log("СРАБОТАЛ SetNet " + this.SecurityCode + ",  StopLoss =" + this.StopLoss);
         }

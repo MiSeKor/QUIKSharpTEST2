@@ -56,9 +56,16 @@ namespace QUIKSharpTEST2
         }
         public void ClosPositions()
         {
-            SelectedTool.Isactiv = false;
-            SelectedTool.CloseAllpositions();
-        } 
+            //SelectedTool.Isactiv = false;
+            if (!SelectedTool.Isactiv)
+            {
+                SelectedTool.CloseAllpositions();
+            }
+            else
+            {
+                SelectedTool.Log("CloseAllpositions" + SelectedTool.Name + " НЕ ВОЗМОЖНА при включенной стратегии");
+            }
+        }
         public class EnumToArrayConverter : IValueConverter
         {
             public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)

@@ -198,7 +198,7 @@ namespace QUIKSharpTEST2
 
             if (ClassCode == "QJSIM")
             {
-                Positions = Convert.ToDecimal(_quik.Trading.GetDepo(СlientCode, this.FirmID, // <<== ЭТОТ код только Т0
+                this.Positions = Convert.ToDecimal(_quik.Trading.GetDepo(СlientCode, this.FirmID, // <<== ЭТОТ код только Т0
                        this.SecurityCode, this.AccountID).Result?.DepoCurrentBalance / this.Lot);
             }
             
@@ -207,7 +207,7 @@ namespace QUIKSharpTEST2
             {
                 try
                 {
-                    Positions = Convert.ToDecimal(_quik.Trading.GetDepoEx(FirmID, СlientCode,
+                    this.Positions = Convert.ToDecimal(_quik.Trading.GetDepoEx(FirmID, СlientCode,
                         SecurityCode, // <<== ЭТОТ код на боевом КВИКЕ РАБОТАЕТ и показывает Т1
                         AccountID, 1).Result?.CurrentBalance / this.Lot);// проверка оператора "?"
 
@@ -351,12 +351,12 @@ namespace QUIKSharpTEST2
                 {
                     if (StopLoss == decimal.Zero ||
                         this.ListStopOrderBuy.Count == 0 &&
-                        this.LastPrice > StopLoss + CalclOtstup(StopLoss, this.Cels + this.StepLevel) ||
+                        this.LastPrice > StopLoss + CalclOtstup(StopLoss, this.Cels + this.StepLevel - this.Step) ||
                         this.ListStopOrderBuy.Count > 0 &&
                         this.LastPrice > this.ListStopOrderBuy[0].ConditionPrice
                         + CalclOtstup(this.ListStopOrderBuy[0].ConditionPrice, this.Cels + this.StepLevel))
-                    {
-                        if (this.ListStopOrderBuy.Count >= 0 && this.StopLoss !=  decimal.Zero) otstup = this.Cels;
+                    {// определиться с отступами
+                        if (this.ListStopOrderBuy.Count >= 0 && this.StopLoss != decimal.Zero) otstup = this.Cels;
                         SetNet(this.LastPrice - otstup, this.operation);
                         
                     }
@@ -371,7 +371,7 @@ namespace QUIKSharpTEST2
                 {
                     if (StopLoss == decimal.Zero ||
                         this.ListStopOrderSel.Count == 0 &&
-                        this.LastPrice < StopLoss - CalclOtstup(StopLoss, this.Cels + this.StepLevel) ||
+                        this.LastPrice < StopLoss - CalclOtstup(StopLoss, this.Cels + this.StepLevel - this.Step) ||
                         this.ListStopOrderSel.Count > 0 &&
                         this.LastPrice < this.ListStopOrderSel[0].ConditionPrice
                         - CalclOtstup(this.ListStopOrderSel[0].ConditionPrice, this.Cels + this.StepLevel))
@@ -401,33 +401,58 @@ namespace QUIKSharpTEST2
                     if(order.State == State.Completed) List.Remove(R);
                 }
 
-                foreach (var spOrder in this.ListStopOrderBuy.ToList().Where(spOrder => order.TransID == spOrder.TransId && order.State == State.Completed))
+                if (this.operation == Operation.Buy)
                 {
-                    this.ListStopOrderBuy.Remove(spOrder);
-                    var cel = ClassCode == "SPBFUT" ? this.Cels : CalclOtstup(spOrder.ConditionPrice, this.Cels);
-                    var price = this.operation == Operation.Buy ? order.Price + cel : order.Price - cel;
-                    ListStopOrderSel.Add(CreateStopOrder(price, this.operation));
-                    Log("ВЫСТАВЛЕН ОРДЕР НА " + this.operation + " по цене: " + price + " " + SecurityCode);
+                    foreach (var spOrder in this.ListStopOrderBuy.ToList().Where(spOrder => order.TransID == spOrder.TransId && order.State == State.Completed))
+                    {
+                        this.ListStopOrderBuy.Remove(spOrder);
+                        var cel = ClassCode == "SPBFUT" ? this.Cels : CalclOtstup(spOrder.ConditionPrice, this.Cels);
+                        var price = spOrder.ConditionPrice + cel;
+                        ListStopOrderSel.Add(CreateStopOrder(price, Operation.Sell));
+                        Log("ВЫСТАВЛЕН ОРДЕР НА " + this.operation + " по цене: " + price + " " + SecurityCode);
 
+                    }
+
+                    foreach (var spOrder in this.ListStopOrderSel.ToList().Where(spOrder => order.TransID == spOrder.TransId && order.State == State.Completed))
+                    {
+                        this.ListStopOrderSel.Remove(spOrder);
+                        var cel = ClassCode == "SPBFUT" ? this.Cels : CalclOtstup(spOrder.ConditionPrice, this.Cels);
+                        var price = spOrder.ConditionPrice - cel;
+                        ListStopOrderBuy.Add(CreateStopOrder(price, this.operation));
+                        Log("ВЫСТАВЛЕН ОРДЕР НА " + this.operation + " по цене: " + price + " " + SecurityCode);
+
+                    }
                 }
 
-                foreach (var spOrder in this.ListStopOrderSel.ToList().Where(spOrder => order.TransID == spOrder.TransId && order.State == State.Completed))
-                {
-                    this.ListStopOrderSel.Remove(spOrder);
-                    var cel = ClassCode == "SPBFUT" ? this.Cels : CalclOtstup(spOrder.ConditionPrice, this.Cels);
-                    var price = this.operation == Operation.Buy ? order.Price - cel : order.Price + cel;
-                    ListStopOrderBuy.Add(CreateStopOrder(price, this.operation));
-                    Log("ВЫСТАВЛЕН ОРДЕР НА " + this.operation + " по цене: " + price + " " + SecurityCode);
+                if (this.operation == Operation.Sell)
+                {  
+                    foreach (var spOrder in this.ListStopOrderSel.ToList().Where(spOrder => order.TransID == spOrder.TransId && order.State == State.Completed))
+                    {
+                        this.ListStopOrderSel.Remove(spOrder);
+                        var cel = ClassCode == "SPBFUT" ? this.Cels : CalclOtstup(spOrder.ConditionPrice, this.Cels);
+                        var price = spOrder.ConditionPrice - cel;
+                        ListStopOrderBuy.Add(CreateStopOrder(price, Operation.Buy));
+                        Log("ВЫСТАВЛЕН ОРДЕР НА " + this.operation + " по цене: " + price + " " + SecurityCode);
 
-                } 
+                    }
+
+                    foreach (var spOrder in this.ListStopOrderBuy.ToList().Where(spOrder => order.TransID == spOrder.TransId && order.State == State.Completed))
+                    {
+                        this.ListStopOrderBuy.Remove(spOrder);
+                        var cel = ClassCode == "SPBFUT" ? this.Cels : CalclOtstup(spOrder.ConditionPrice, this.Cels);
+                        var price = spOrder.ConditionPrice + cel;
+                        ListStopOrderSel.Add(CreateStopOrder(price, this.operation));
+                        Log("ВЫСТАВЛЕН ОРДЕР НА " + this.operation + " по цене: " + price + " " + SecurityCode);
+
+                    } 
+                }
             }
         }
         private void Events_OnParam_Strategy_ToTrend(Param par)
-        {
-            decimal pr = this.LastPrice;
-
+        { 
             if (par.SecCode == SecurityCode && Isactiv)
             {
+                decimal pr = this.LastPrice; 
                 Operation BuySel = this.operation == Operation.Buy ? Operation.Buy : Operation.Sell;
                 int Qnt = this.Levels * this.Quantity; 
 

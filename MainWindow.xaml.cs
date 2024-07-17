@@ -53,27 +53,29 @@ namespace QUIKSharpTEST2
 
         private void MainWind_Loaded(object sender, RoutedEventArgs e)
         {
-            СreateQuik();
             //MV.ListTools = [AddTool("SBER"), AddTool("VTBR"), AddTool("RUAL"), AddTool("GDM4")];
 
             //
-            СlassSaveLoadFiles = new СlassSaveLoad(Path);
+
 
             try
             {
-                List<string> Lst = [];
-
-                using (var reader = File.OpenText(Path))
+                if (СreateQuik())
                 {
-                    var Files = reader?.ReadToEnd();
-                    Lst = JsonConvert.DeserializeObject<List<string>>(Files);
-                }
-                //MV = new MainVM();
-                foreach (var i in Lst)
-                {
-                    VM.ListTools.Add(new Tool(_quik, i));
-                }
+                    СlassSaveLoadFiles = new СlassSaveLoad(Path);
+                    List<string> Lst = [];
 
+                    using (var reader = File.OpenText(Path))
+                    {
+                        var Files = reader?.ReadToEnd();
+                        Lst = JsonConvert.DeserializeObject<List<string>>(Files);
+                    }
+                    //MV = new MainVM();
+                    foreach (var i in Lst)
+                    {
+                        VM.ListTools.Add(new Tool(_quik, i));
+                    }
+                } 
             }
             catch (Exception ex)
             {
@@ -112,20 +114,21 @@ namespace QUIKSharpTEST2
                     }
                 }
             }*/
-
-            //_quik.StopService();
-            var Lst = new List<string>();
-            foreach (var item in VM.ListTools)
+            if (_quik.Service.IsConnected().Result)
             {
-                Lst.Add(item.SecurityCode);
-            }
-            using (StreamWriter writer = File.CreateText(Path))
-            {
-                string output = JsonConvert.SerializeObject(Lst);
-                writer.WriteLine(output);
-            }
-            //СlassSaveLoadFiles.SaveData(toolList);
-            СlassSaveLoadFiles.SaveData(Lst);
+                var Lst = new List<string>();
+                foreach (var item in VM.ListTools)
+                {
+                    Lst.Add(item.SecurityCode);
+                }
+                using (StreamWriter writer = File.CreateText(Path))
+                {
+                    string output = JsonConvert.SerializeObject(Lst);
+                    writer.WriteLine(output);
+                }
+                //СlassSaveLoadFiles.SaveData(toolList);
+                СlassSaveLoadFiles?.SaveData(Lst);
+            } 
         }
 
         private void KillOperationOrders(object sender, RoutedEventArgs e)
@@ -152,7 +155,7 @@ namespace QUIKSharpTEST2
             }
         }
 
-        private Quik СreateQuik()
+        private bool СreateQuik()
         {
             try
             {
@@ -167,8 +170,11 @@ namespace QUIKSharpTEST2
                     }
                     else
                     {
-                        MainWind.Content += "НЕ Ok";
-                        MainWind.Background = Brushes.Crimson;
+                        //MainWind.Content += "НЕ Ok";
+                        //MainWind.Background = Brushes.Crimson;
+                        //MessageBox.Show("НЕТ соединения");
+                        //Close();
+                        return false;
                     }
 
                 } 
@@ -178,7 +184,7 @@ namespace QUIKSharpTEST2
                 Console.WriteLine(e);
             }
 
-            return _quik;
+            return true;
         }
 
         private void Button_Remove_Tool_OnClick(object sender, RoutedEventArgs e)

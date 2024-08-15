@@ -1,3 +1,4 @@
+ТОРГОВЫ РОБОТ СЕТОЧНИК
 ресурсы: https://github.com/finsight/QUIKSharp
 
 youtube   

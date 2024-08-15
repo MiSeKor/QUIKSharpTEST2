@@ -1,4 +1,4 @@
-ТОРГОВЫ РОБОТ СЕТОЧНИК
+ТОРГОВЫЙ РОБОТ СЕТОЧНИК
 
 ресурсы: https://github.com/finsight/QUIKSharp
 

@@ -176,6 +176,7 @@
                                                 UpdateSourceTrigger=PropertyChanged}" IsReadOnly="False"/>-->
                         <DataGridTextColumn Header="Tool" IsReadOnly="True" Width="60" Binding="{Binding SecurityCode}"/>
                         <DataGridTextColumn Header="LastPrise" IsReadOnly="True" Width="*" Binding="{Binding LastPrice}"/>
+                        <DataGridTextColumn Header="StartPrice" Width="*" Binding="{Binding StartPrice}"/>
                         <DataGridTextColumn Header="Positions" IsReadOnly="True" Width="60" Binding="{Binding Positions}"/>
                         <DataGridTextColumn Header="Levels" Width="45" Binding="{Binding Levels}"/>
                         <DataGridTextColumn Header="StepLevel" Width="60" Binding="{Binding StepLevel}"/>

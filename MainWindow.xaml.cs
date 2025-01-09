@@ -23,7 +23,8 @@ using QuikSharp.DataStructures;
 namespace QUIKSharpTEST2
 {
     /// <summary>
-    /// Логика взаимодействия для MainWindow.xaml
+    /// Логика взаимодействия для MainWindow.xaml f,hf rflf,hf
+    /// 12312312312312313123
     /// </summary>
     public partial class MainWindow : Window
     { 

@@ -96,12 +96,12 @@ namespace QUIKSharpTEST2
                 SecurityCode = secCode;
                 ClassCode = quik.Class.GetSecurityClass("SPBFUT,TQBR,TQBS,TQNL,TQLV,TQNE,TQOB,SPBXM,QJSIM", secCode).Result;
 
-                var codes = quik.Class.GetClientCodes().Result;
+                List<string> codes = _quik.Class.GetClientCodes().Result;
                 if (codes.Count == 1)
                     СlientCode = codes[0]; // для демо
                 else
                     СlientCode = codes[1]; // для боевого
-
+                //СlientCode = (10731).ToString();
                 if (quik != null)
                 {
                     if (ClassCode != null && ClassCode != "")
@@ -199,8 +199,10 @@ namespace QUIKSharpTEST2
 
             if (ClassCode == "QJSIM")
             {
-                this.Positions = Convert.ToDecimal(_quik.Trading.GetDepo(СlientCode, this.FirmID, // <<== ЭТОТ код только Т0
-                       this.SecurityCode, this.AccountID).Result?.DepoCurrentBalance / this.Lot);
+                //this.Positions = Convert.ToDecimal(_quik.Trading.GetDepo(СlientCode, this.FirmID, // <<== ЭТОТ код только Т0
+                //       this.SecurityCode, this.AccountID).Result?.DepoCurrentBalance / this.Lot);
+
+                this.Positions = Convert.ToDecimal(_quik.Trading.GetDepoLimits(this.SecurityCode).Result[2].CurrentBalance / this.Lot);
             }
             
 
